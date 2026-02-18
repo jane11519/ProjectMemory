@@ -1,0 +1,8 @@
+[submodule "libs/shared-utils"]
+	path = libs/shared-utils
+	url = https://github.com/org/shared-utils.git
+
+[submodule "services/payment"]
+	path = services/payment
+	url = git@github.com:org/payment.git
+	branch = develop
