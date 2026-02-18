@@ -39,18 +39,34 @@ export class FTS5Adapter {
    * score 已翻轉為「越大越好」（原始 bm25() 越小越好，這裡取負值）
    */
   searchBM25(query: string, topK: number, namespaceId?: number): Map<number, number> {
+    const sanitized = this.sanitizeQuery(query);
+    if (!sanitized) return new Map();
+
     const rows = this.db.prepare(`
       SELECT rowid AS chunk_id, bm25(chunks_fts, 8.0, 4.0, 1.0, 2.0, 3.0) AS bm25_score
       FROM chunks_fts
       WHERE chunks_fts MATCH ?
       ORDER BY bm25_score
       LIMIT ?
-    `).all(query, topK) as Array<{ chunk_id: number; bm25_score: number }>;
+    `).all(sanitized, topK) as Array<{ chunk_id: number; bm25_score: number }>;
 
     const result = new Map<number, number>();
     for (const row of rows) {
       result.set(row.chunk_id, -row.bm25_score); // 翻轉：越大越好
     }
     return result;
+  }
+
+  /**
+   * 消毒 FTS5 查詢：將每個 token 用雙引號包裹，
+   * 避免 FTS5 特殊字元（如 - 被視為 NOT）造成語法錯誤
+   */
+  private sanitizeQuery(query: string): string {
+    // 以空白分 token，每個 token 用雙引號包裹（內部雙引號轉義）
+    return query
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((token) => `"${token.replace(/"/g, '""')}"`)
+      .join(' ');
   }
 }
