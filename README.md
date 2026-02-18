@@ -510,6 +510,26 @@ SKILL.md 位於 `.claude/skills/projecthub/SKILL.md`，定義以下觸發詞：
 
 當使用者提及這些詞彙時，Claude Code 會自動載入此技能。
 
+### `/projecthub` 斜線指令
+
+在 Claude Code 對話中輸入 `/projecthub` 即可手動載入此技能。載入後 Claude 可直接執行所有 CLI 指令：
+
+```
+/projecthub
+```
+
+常見使用情境：
+
+| 情境 | 對話範例 |
+|------|----------|
+| 搜尋知識庫 | `/projecthub` → 「搜尋 authentication 相關筆記」 |
+| 查看專案知識 | 「project knowledge 關於 API 設計的決策」（自動觸發） |
+| 儲存 session | 「保存目前的 session 狀態」（自動觸發） |
+| 建立索引 | `/projecthub` → 「重建搜尋索引」 |
+| 健康檢查 | `/projecthub` → 「檢查索引一致性並修復」 |
+
+> **提示**：大多數情況下不需要手動輸入 `/projecthub`，當對話中提到觸發詞（如 `search`、`session`、`find in notes`）時，Claude Code 會自動載入技能。
+
 ### Hook 腳本
 
 Hook 設定定義在 `.claude/settings.json`：
