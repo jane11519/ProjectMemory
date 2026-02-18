@@ -49,7 +49,7 @@ export function loadConfig(
   }
 
   // 合併順序：defaults < file config < overrides
-  let merged = deepMerge(DEFAULT_CONFIG, fileConfig);
+  let merged = deepMerge(DEFAULT_CONFIG, fileConfig as Partial<ProjectHubConfig>);
   if (overrides) {
     merged = deepMerge(merged, overrides as Partial<ProjectHubConfig>);
   }
