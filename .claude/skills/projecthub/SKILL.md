@@ -64,6 +64,34 @@ Manages an Obsidian-compatible vault of Markdown notes indexed with hybrid BM25+
 - **Graceful degradation**: vector failure → BM25-only; BM25 failure → vector-only
 - **Content hashing**: SHA-256 for incremental indexing
 
+## Autonomous Behavior
+
+### Proactive Search（主動搜尋）
+
+在以下情境，**自動**搜尋知識庫而不需使用者明確要求：
+
+- 實作涉及先前討論過的領域時
+- 處理有文件記錄的 API 或整合時
+- 使用者提到架構決策相關主題時
+- 修 bug 時搜尋已知問題與解法
+
+### Proactive Capture（主動擷取）
+
+偵測到以下值得保存的資訊時，**主動建議**寫入 vault：
+
+- 架構決策與其背後的推理
+- API 規格與整合的注意事項
+- 技術決策的權衡分析
+- 已知問題與 workarounds
+- 使用者偏好與專案慣例
+
+### What NOT to Capture
+
+- 一次性的 debug session
+- 孤立的程式碼片段
+- 通用程式知識
+- 頻繁變動、缺乏持久價值的資訊
+
 ## References
 
 - [Search Algorithm](references/search-algorithm.md)

@@ -93,20 +93,19 @@ bash .claude/skills/projecthub/scripts/init-vault.sh
 
 ## 安裝到其他專案
 
-### 方式一：npm 安裝（推薦）
+### 快速安裝（一行指令）
 
 ```bash
-# 安裝 npm 包
-npm install projecthub
-
-# 一鍵初始化（安裝 skill 檔案、hooks、vault 目錄、資料庫）
-npx projecthub init
+curl -fsSL https://raw.githubusercontent.com/jane11519/ProjectMemory/main/install.sh | bash
 ```
 
-### 方式二：Git URL
+### npm 安裝
 
 ```bash
-npm install git+https://github.com/user/projecthub.git
+# 從 GitHub 安裝
+npm install github:jane11519/ProjectMemory
+
+# 一鍵初始化（安裝 skill 檔案、hooks、vault 目錄、資料庫）
 npx projecthub init
 ```
 
