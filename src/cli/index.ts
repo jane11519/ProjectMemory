@@ -6,6 +6,7 @@ import { registerIndexCommand } from './commands/index.js';
 import { registerSearchCommand } from './commands/search.js';
 import { registerSessionCommand } from './commands/session.js';
 import { registerHealthCommand } from './commands/health.js';
+import { registerInitCommand } from './commands/init.js';
 
 const program = new Command();
 
@@ -19,6 +20,7 @@ registerIndexCommand(program);
 registerSearchCommand(program);
 registerSessionCommand(program);
 registerHealthCommand(program);
+registerInitCommand(program);
 
 /** 全域錯誤處理 */
 program.exitOverride();

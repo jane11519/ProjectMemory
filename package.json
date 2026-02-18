@@ -7,6 +7,10 @@
   "bin": {
     "projecthub": "./dist/cli/index.js"
   },
+  "files": [
+    "dist/",
+    "assets/"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
