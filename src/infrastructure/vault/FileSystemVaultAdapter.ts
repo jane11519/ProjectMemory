@@ -66,7 +66,8 @@ export class FileSystemVaultAdapter implements VaultPort {
         const entries = await fs.readdir(parentDir, { withFileTypes: true });
         for (const entry of entries) {
           if (entry.isDirectory()) {
-            results.push(path.join(parts[0], entry.name));
+            // Namespace 名稱統一用 forward slash（跨平台一致）
+            results.push(parts[0] + '/' + entry.name);
           }
         }
       }
