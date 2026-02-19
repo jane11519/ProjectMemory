@@ -46,7 +46,6 @@
     "commander": "^12.1.0",
     "gray-matter": "^4.0.3",
     "openai": "^4.73.0",
-    "projecthub": "github:jane11519/ProjectMemory",
     "sqlite-vec": "^0.1.6",
     "zod": "^3.25.76"
   },
