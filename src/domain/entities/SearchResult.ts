@@ -11,4 +11,10 @@ export interface SearchResult {
   vecNorm: number;
   snippet?: string;
   text?: string;
+  /** RRF 融合分數（rrf 融合模式下） */
+  rrfScore?: number;
+  /** LLM Re-ranker 相關性分數（deep 模式下） */
+  rerankerScore?: number;
+  /** 適用的 context metadata（階層繼承） */
+  contexts?: string[];
 }

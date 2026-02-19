@@ -35,4 +35,10 @@ export interface IndexPort {
 
   // 審計
   writeAuditLog(entry: { actor: string; action: string; targetPath?: string; detailJson?: string }): void;
+
+  // Context 操作
+  addContext(virtualPath: string, description: string): number;
+  listContexts(): Array<{ contextId: number; virtualPath: string; description: string }>;
+  checkContext(virtualPath: string): Array<{ contextId: number; virtualPath: string; description: string }>;
+  removeContext(virtualPath: string): boolean;
 }

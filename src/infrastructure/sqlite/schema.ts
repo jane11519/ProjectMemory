@@ -88,6 +88,20 @@ CREATE TABLE IF NOT EXISTS sessions (
     CHECK(status IN ('active','compacted','closed'))
 );
 
+CREATE TABLE IF NOT EXISTS llm_cache (
+  cache_key TEXT PRIMARY KEY,
+  result_json TEXT NOT NULL,
+  created_at INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS path_contexts (
+  context_id INTEGER PRIMARY KEY,
+  virtual_path TEXT NOT NULL UNIQUE,
+  description TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+
 CREATE INDEX IF NOT EXISTS idx_docs_namespace ON docs(namespace_id);
 CREATE INDEX IF NOT EXISTS idx_docs_content_hash ON docs(content_hash);
 CREATE INDEX IF NOT EXISTS idx_docs_source_kind ON docs(source_kind);

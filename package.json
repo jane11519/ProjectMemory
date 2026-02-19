@@ -3,7 +3,25 @@
   "version": "0.1.0",
   "description": "Project-level Obsidian knowledge base with hybrid search for Claude Code",
   "type": "module",
-  "engines": { "node": ">=18.0.0" },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jane11519/ProjectMemory.git"
+  },
+  "homepage": "https://github.com/jane11519/ProjectMemory#readme",
+  "keywords": [
+    "claude-code",
+    "skill",
+    "knowledge-base",
+    "obsidian",
+    "hybrid-search",
+    "bm25",
+    "vector-search",
+    "sqlite"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "bin": {
     "projecthub": "./dist/cli/index.js"
   },
@@ -13,6 +31,7 @@
   ],
   "scripts": {
     "build": "tsc",
+    "prepare": "npm run build",
     "dev": "tsc --watch",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -22,17 +41,20 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.26.0",
     "better-sqlite3": "^11.7.0",
-    "sqlite-vec": "^0.1.6",
-    "gray-matter": "^4.0.3",
     "commander": "^12.1.0",
-    "openai": "^4.73.0"
+    "gray-matter": "^4.0.3",
+    "openai": "^4.73.0",
+    "projecthub": "github:jane11519/ProjectMemory",
+    "sqlite-vec": "^0.1.6",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
-    "typescript": "^5.6.0",
     "@types/better-sqlite3": "^7.6.12",
     "@types/node": "^22.0.0",
-    "vitest": "^2.1.0",
-    "@vitest/coverage-v8": "^2.1.0"
+    "@vitest/coverage-v8": "^2.1.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
   }
 }

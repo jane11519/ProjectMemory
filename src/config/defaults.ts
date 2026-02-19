@@ -28,6 +28,22 @@ export const DEFAULT_CONFIG: ProjectHubConfig = {
       tags: 2.0,
       properties: 3.0,
     },
+    fusionMethod: 'rrf',
+    rrfK: 60,
+    strongSignalMinScore: 0.85,
+    strongSignalMinGap: 0.15,
+    rerankCandidateLimit: 20,
+    rerankBlending: {
+      topRrfWeight: 0.75,
+      midRrfWeight: 0.60,
+      tailRrfWeight: 0.40,
+    },
+  },
+  llm: {
+    provider: 'none',
+    baseUrl: 'https://api.openai.com/v1',
+    model: 'gpt-4o-mini',
+    cacheTTLMs: 3600000, // 1 小時
   },
   chunking: {
     maxTokensPerChunk: 512,

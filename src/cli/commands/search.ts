@@ -5,9 +5,13 @@ import { DatabaseManager } from '../../infrastructure/sqlite/DatabaseManager.js'
 import { FTS5Adapter } from '../../infrastructure/sqlite/FTS5Adapter.js';
 import { SqliteVecAdapter } from '../../infrastructure/sqlite/SqliteVecAdapter.js';
 import { OpenAIEmbeddingAdapter } from '../../infrastructure/embedding/OpenAIEmbeddingAdapter.js';
+import { NullLLMAdapter } from '../../infrastructure/llm/NullLLMAdapter.js';
+import { HttpLLMAdapter } from '../../infrastructure/llm/HttpLLMAdapter.js';
 import { loadConfig } from '../../config/ConfigLoader.js';
 import { ProgressiveDisclosureFormatter } from '../formatters/ProgressiveDisclosureFormatter.js';
 import type { OutputFormat, DetailLevel } from '../formatters/ProgressiveDisclosureFormatter.js';
+import type { LLMPort } from '../../domain/ports/LLMPort.js';
+import type Database from 'better-sqlite3';
 
 /** 註冊 search 指令群組 */
 export function registerSearchCommand(program: Command): void {
@@ -21,9 +25,11 @@ export function registerSearchCommand(program: Command): void {
     .option('--repo-root <path>', 'Repository root directory', '.')
     .option('--top-k <number>', 'Number of results to return', '10')
     .option('--namespace <id>', 'Filter by namespace ID')
-    .option('--mode <mode>', 'Search mode: hybrid, bm25_only, vec_only', 'hybrid')
+    .option('--mode <mode>', 'Search mode: hybrid, bm25_only, vec_only, deep', 'hybrid')
     .option('--level <level>', 'Detail level: brief, normal, full', 'normal')
     .option('--format <format>', 'Output format: json or text', 'text')
+    .option('--skip-expansion', 'Skip query expansion in deep mode')
+    .option('--skip-reranking', 'Skip LLM re-ranking in deep mode')
     .action(async (query: string, opts) => {
       const repoRoot = opts.repoRoot;
       const format: OutputFormat = opts.format;
@@ -41,6 +47,8 @@ export function registerSearchCommand(program: Command): void {
           topK: parseInt(opts.topK, 10),
           namespaceId: opts.namespace ? parseInt(opts.namespace, 10) : undefined,
           mode: opts.mode,
+          skipExpansion: opts.skipExpansion ?? false,
+          skipReranking: opts.skipReranking ?? false,
         });
 
         if (response.warnings.length > 0) {
@@ -162,9 +170,25 @@ export function registerSearchCommand(program: Command): void {
     });
 }
 
+/** 根據設定建構 LLM adapter */
+function createLLMAdapter(config: ReturnType<typeof loadConfig>, db?: Database.Database): LLMPort {
+  if (config.llm.provider === 'openai-compatible') {
+    return new HttpLLMAdapter({
+      baseUrl: config.llm.baseUrl,
+      apiKey: config.llm.apiKey ?? process.env.OPENAI_API_KEY,
+      model: config.llm.model,
+      rerankerModel: config.llm.rerankerModel,
+      cacheTTLMs: config.llm.cacheTTLMs,
+    }, db);
+  }
+  return new NullLLMAdapter();
+}
+
 /** 建立 SearchUseCase 所需的依賴 */
 function createSearchUseCase(dbMgr: DatabaseManager, config: ReturnType<typeof loadConfig>): SearchUseCase {
   const db = dbMgr.getDb();
+  const llm = createLLMAdapter(config, db);
+
   return new SearchUseCase(
     db,
     new FTS5Adapter(db),
@@ -175,5 +199,7 @@ function createSearchUseCase(dbMgr: DatabaseManager, config: ReturnType<typeof l
       dimension: config.embedding.dimension,
       baseUrl: config.embedding.baseUrl,
     }),
+    llm,
+    config.search,
   );
 }
