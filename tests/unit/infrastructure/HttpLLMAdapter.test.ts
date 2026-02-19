@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { HttpLLMAdapter } from '../../../src/infrastructure/llm/HttpLLMAdapter.js';
 
 /**
@@ -214,5 +214,233 @@ describe('HttpLLMAdapter', () => {
 
     const result = await adapter.expandQuery('test');
     expect(result).toHaveLength(2);
+  });
+
+  /**
+   * Scenario: 預設策略為 chat（向下相容）
+   * Given adapter 未指定 rerankerStrategy
+   * When 呼叫 rerank
+   * Then 使用 chat completions API（而非 fetch endpoint）
+   */
+  it('should default to chat strategy when rerankerStrategy is not specified', async () => {
+    // adapter 在 beforeEach 中建立，未指定 rerankerStrategy
+    mockCreate.mockResolvedValue({
+      choices: [{
+        message: {
+          content: '[{"id": 1, "score": 0.8}]',
+        },
+      }],
+    });
+
+    const candidates = [{ chunkId: 1, text: 'some text' }];
+    await adapter.rerank('query', candidates);
+
+    // 應透過 chat completions（mockCreate）呼叫，而非 fetch
+    expect(mockCreate).toHaveBeenCalledTimes(1);
+  });
+});
+
+/**
+ * Feature: Endpoint Reranker Strategy（/v1/rerank）
+ *
+ * 作為搜尋管線，當使用專用 cross-encoder reranker 時，
+ * 我需要透過 /v1/rerank endpoint 而非 chat completions 進行 re-ranking。
+ */
+describe('HttpLLMAdapter (endpoint reranker strategy)', () => {
+  let adapter: HttpLLMAdapter;
+  let mockFetch: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    mockFetch = vi.fn();
+    vi.stubGlobal('fetch', mockFetch);
+
+    adapter = new HttpLLMAdapter({
+      baseUrl: 'http://localhost:8080/v1',
+      apiKey: 'sk-test-key',
+      model: 'qwen3:1.7b',
+      rerankerModel: 'qwen3-reranker-0.6b',
+      rerankerStrategy: 'endpoint',
+    });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  /**
+   * Scenario: endpoint 策略成功 rerank
+   * Given adapter 使用 rerankerStrategy='endpoint'
+   * And fetch 回傳 Jina/Cohere/LocalAI 格式 JSON
+   * When 呼叫 rerank
+   * Then 回傳正確的 RerankResult[]
+   */
+  it('should rerank via /v1/rerank endpoint with correct results', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        results: [
+          { index: 0, relevance_score: 0.95 },
+          { index: 1, relevance_score: 0.3 },
+        ],
+      }),
+    });
+
+    const candidates = [
+      { chunkId: 10, text: 'Authentication service handles JWT.' },
+      { chunkId: 20, text: 'User avatar upload logic.' },
+    ];
+
+    const result = await adapter.rerank('authentication', candidates);
+
+    expect(result).toHaveLength(2);
+    expect(result[0]).toEqual({ chunkId: 10, relevanceScore: 0.95 });
+    expect(result[1]).toEqual({ chunkId: 20, relevanceScore: 0.3 });
+
+    // 驗證 fetch 呼叫參數
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    const [url, options] = mockFetch.mock.calls[0];
+    expect(url).toBe('http://localhost:8080/v1/rerank');
+    expect(options.method).toBe('POST');
+    expect(options.headers['Authorization']).toBe('Bearer sk-test-key');
+    expect(options.headers['Content-Type']).toBe('application/json');
+
+    const body = JSON.parse(options.body);
+    expect(body.model).toBe('qwen3-reranker-0.6b');
+    expect(body.query).toBe('authentication');
+    expect(body.documents).toHaveLength(2);
+    expect(body.top_n).toBe(2);
+  });
+
+  /**
+   * Scenario: endpoint 策略不傳送 Authorization header（apiKey 為 'not-needed'）
+   * Given adapter 未設定有效 apiKey
+   * When 呼叫 rerank
+   * Then 不帶 Authorization header
+   */
+  it('should omit Authorization header when apiKey is not-needed', async () => {
+    const adapterNoKey = new HttpLLMAdapter({
+      baseUrl: 'http://localhost:8080/v1',
+      model: 'qwen3:1.7b',
+      rerankerModel: 'qwen3-reranker-0.6b',
+      rerankerStrategy: 'endpoint',
+    });
+
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({ results: [{ index: 0, relevance_score: 0.5 }] }),
+    });
+
+    await adapterNoKey.rerank('query', [{ chunkId: 1, text: 'text' }]);
+
+    const [, options] = mockFetch.mock.calls[0];
+    expect(options.headers['Authorization']).toBeUndefined();
+  });
+
+  /**
+   * Scenario: endpoint 策略處理 HTTP 錯誤
+   * Given fetch 回傳 500
+   * When 呼叫 rerank
+   * Then throw error 包含狀態碼
+   */
+  it('should throw error when endpoint returns non-ok status', async () => {
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 500,
+      text: async () => 'Internal Server Error',
+    });
+
+    const candidates = [{ chunkId: 1, text: 'some text' }];
+
+    await expect(adapter.rerank('query', candidates))
+      .rejects.toThrow('Rerank endpoint returned 500: Internal Server Error');
+  });
+
+  /**
+   * Scenario: endpoint 策略 score clamping
+   * Given fetch 回傳超出 [0,1] 的分數
+   * When 解析結果
+   * Then 分數被限制在 0.0 ~ 1.0
+   */
+  it('should clamp endpoint rerank scores to [0, 1]', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        results: [
+          { index: 0, relevance_score: 1.8 },
+          { index: 1, relevance_score: -0.5 },
+        ],
+      }),
+    });
+
+    const candidates = [
+      { chunkId: 1, text: 'text1' },
+      { chunkId: 2, text: 'text2' },
+    ];
+
+    const result = await adapter.rerank('query', candidates);
+
+    expect(result[0].relevanceScore).toBe(1.0);
+    expect(result[1].relevanceScore).toBe(0.0);
+  });
+
+  /**
+   * Scenario: endpoint 策略過濾 index 超出範圍的結果
+   * Given fetch 回傳 index 超出候選數量的結果
+   * When 解析結果
+   * Then 忽略超出範圍的項目
+   */
+  it('should filter out results with out-of-range index', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        results: [
+          { index: 0, relevance_score: 0.9 },
+          { index: 5, relevance_score: 0.7 }, // 超出範圍
+        ],
+      }),
+    });
+
+    const candidates = [{ chunkId: 1, text: 'text1' }];
+    const result = await adapter.rerank('query', candidates);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].chunkId).toBe(1);
+  });
+
+  /**
+   * Scenario: endpoint 策略處理空 results
+   * Given fetch 回傳沒有 results 欄位的回應
+   * When 解析結果
+   * Then 回傳空陣列
+   */
+  it('should return empty array when response has no results field', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({}),
+    });
+
+    const candidates = [{ chunkId: 1, text: 'text1' }];
+    const result = await adapter.rerank('query', candidates);
+
+    expect(result).toEqual([]);
+  });
+
+  /**
+   * Scenario: endpoint 策略文字截斷至 500 字元
+   * Given 候選文字超過 500 字元
+   * When 發送至 endpoint
+   * Then documents 中的文字被截斷至 500 字元
+   */
+  it('should truncate document text to 500 characters', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({ results: [{ index: 0, relevance_score: 0.5 }] }),
+    });
+
+    const longText = 'A'.repeat(1000);
+    await adapter.rerank('query', [{ chunkId: 1, text: longText }]);
+
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+    expect(body.documents[0]).toHaveLength(500);
   });
 });

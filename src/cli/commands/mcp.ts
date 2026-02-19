@@ -84,6 +84,7 @@ function createLLMAdapter(config: ReturnType<typeof loadConfig>, db: Database.Da
       apiKey: config.llm.apiKey ?? process.env.OPENAI_API_KEY,
       model: config.llm.model,
       rerankerModel: config.llm.rerankerModel,
+      rerankerStrategy: config.llm.rerankerStrategy,
       cacheTTLMs: config.llm.cacheTTLMs,
     }, db);
   }

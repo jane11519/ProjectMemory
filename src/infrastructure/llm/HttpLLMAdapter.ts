@@ -20,6 +20,8 @@ export interface HttpLLMConfig {
   apiKey?: string;
   model: string;
   rerankerModel?: string;
+  /** Reranker 策略：'chat' 用 chat completions，'endpoint' 用 /v1/rerank API */
+  rerankerStrategy?: 'chat' | 'endpoint';
   /** 快取 TTL（毫秒），預設 1 小時 */
   cacheTTLMs?: number;
 }
@@ -29,6 +31,9 @@ export class HttpLLMAdapter implements LLMPort {
   private readonly client: OpenAI;
   private readonly model: string;
   private readonly rerankerModel: string;
+  private readonly rerankerStrategy: 'chat' | 'endpoint';
+  private readonly baseUrl: string;
+  private readonly apiKey: string;
   private readonly cacheTTLMs: number;
   private readonly logger = new Logger('HttpLLMAdapter');
   private db?: Database.Database;
@@ -36,12 +41,15 @@ export class HttpLLMAdapter implements LLMPort {
   constructor(config: HttpLLMConfig, db?: Database.Database) {
     this.model = config.model;
     this.rerankerModel = config.rerankerModel ?? config.model;
+    this.rerankerStrategy = config.rerankerStrategy ?? 'chat';
+    this.baseUrl = config.baseUrl;
+    this.apiKey = config.apiKey || 'not-needed';
     this.cacheTTLMs = config.cacheTTLMs ?? 3600000;
     this.db = db;
 
     this.client = new OpenAI({
-      apiKey: config.apiKey || 'not-needed',
-      baseURL: config.baseUrl,
+      apiKey: this.apiKey,
+      baseURL: this.baseUrl,
       maxRetries: 1,
       timeout: 30000,
     });
@@ -96,6 +104,20 @@ export class HttpLLMAdapter implements LLMPort {
     const cached = this.getFromCache(cacheKey);
     if (cached) return cached as RerankResult[];
 
+    // 依策略分派：chat 用 chat completions，endpoint 用 /v1/rerank API
+    const results = this.rerankerStrategy === 'endpoint'
+      ? await this.rerankViaEndpoint(query, candidates)
+      : await this.rerankViaChat(query, candidates);
+
+    this.setCache(cacheKey, results);
+    return results;
+  }
+
+  /** 透過 chat completions API 請模型以 JSON 回傳相關性分數 */
+  private async rerankViaChat(
+    query: string,
+    candidates: Array<{ chunkId: number; text: string }>,
+  ): Promise<RerankResult[]> {
     try {
       const results: RerankResult[] = [];
 
@@ -138,10 +160,50 @@ Return ONLY the JSON array, no other text.`,
         }
       }
 
-      this.setCache(cacheKey, results);
       return results;
     } catch (err: any) {
-      this.logger.warn('Re-ranking failed', { error: err?.message });
+      this.logger.warn('Re-ranking (chat) failed', { error: err?.message });
+      throw err;
+    }
+  }
+
+  /** 透過 /v1/rerank endpoint 呼叫專用 cross-encoder reranker */
+  private async rerankViaEndpoint(
+    query: string,
+    candidates: Array<{ chunkId: number; text: string }>,
+  ): Promise<RerankResult[]> {
+    const url = `${this.baseUrl}/rerank`;
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(this.apiKey && this.apiKey !== 'not-needed'
+            ? { Authorization: `Bearer ${this.apiKey}` }
+            : {}),
+        },
+        body: JSON.stringify({
+          model: this.rerankerModel,
+          query,
+          documents: candidates.map((c) => c.text.slice(0, 500)),
+          top_n: candidates.length,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Rerank endpoint returned ${response.status}: ${await response.text()}`);
+      }
+
+      const data = await response.json();
+      // Jina/Cohere/LocalAI 格式：{ results: [{ index, relevance_score }] }
+      return (data.results ?? [])
+        .filter((r: any) => typeof r.index === 'number' && r.index < candidates.length)
+        .map((r: any) => ({
+          chunkId: candidates[r.index].chunkId,
+          relevanceScore: Math.max(0, Math.min(1, r.relevance_score ?? 0)),
+        }));
+    } catch (err: any) {
+      this.logger.warn('Re-ranking (endpoint) failed', { error: err?.message });
       throw err;
     }
   }

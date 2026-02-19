@@ -3,7 +3,7 @@
 **專案級 Obsidian 知識庫，搭載多階段搜尋管線（RRF + Query Expansion + LLM Re-ranking）、MCP Server、以及階層式 Context 系統，為 Claude Code 打造的專案技能（Project Skill）。**
 
 ![Node.js](https://img.shields.io/badge/Node.js-≥18.0.0-339933?logo=node.js)
-![Tests](https://img.shields.io/badge/tests-109%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-117%20passing-brightgreen)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript)
 
@@ -14,7 +14,8 @@
 - **多階段搜尋管線** — BM25 + Vector → RRF 融合 → Query Expansion → LLM Re-ranking → Position-aware Blending
 - **MCP Server** — 6 個 MCP 工具，支援 stdio 與 HTTP/SSE 傳輸，可直接接入 Claude Code
 - **階層式 Context** — 虛擬路徑 metadata 系統，子路徑自動繼承父路徑 context
-- **OpenAI-Compatible LLM** — 支援 OpenAI、Ollama、vLLM、LiteLLM 等任何相容 API endpoint
+- **OpenAI-Compatible LLM** — 支援 OpenAI、Ollama、vLLM、LiteLLM、LocalAI 等任何相容 API endpoint
+- **Dedicated Reranker 支援** — 除 chat completions 外，亦支援 `/v1/rerank` endpoint（Jina/Cohere/LocalAI cross-encoder）
 - **漸進式揭露（Progressive Disclosure）** — `brief` / `normal` / `full` 三級細節控制
 - **優雅降級（Graceful Degradation）** — 向量失敗 → BM25-only；BM25 失敗 → 向量；無 LLM → RRF-only
 - **Session 持久化** — SQLite 儲存 + Markdown 匯出，支援滾動摘要與壓縮
@@ -323,6 +324,96 @@ ranks 11+:   finalScore = 0.40 × rrfScore + 0.60 × rerankerScore
 }
 ```
 
+### 使用 LocalAI（專用 Reranker + Embedding + Chat）
+
+透過 LocalAI 統一提供三個模型服務，使用 `/v1/rerank` endpoint 呼叫 cross-encoder reranker。
+
+#### 1. 啟動 LocalAI Docker
+
+```bash
+# 建立模型目錄
+mkdir -p localai-models
+
+# 啟動 LocalAI（CPU 版，含 API Key 保護）
+docker run -d --name localai \
+  -p 8080:8080 \
+  -v ./localai-models:/build/models \
+  -e API_KEY=sk-projecthub-secret-123 \
+  -e THREADS=4 \
+  localai/localai:latest-cpu
+```
+
+若有 NVIDIA GPU，改用 GPU 版加速推論：
+
+```bash
+docker run -d --name localai \
+  -p 8080:8080 \
+  -v ./localai-models:/build/models \
+  -e API_KEY=sk-projecthub-secret-123 \
+  -e THREADS=4 \
+  --gpus all \
+  localai/localai:latest-gpu-nvidia-cuda-12
+```
+
+#### 2. 安裝模型
+
+```bash
+# Embedding 模型
+curl http://localhost:8080/models/apply -H "Authorization: Bearer sk-projecthub-secret-123" \
+  -d '{"url": "huggingface://lm-kit/embeddinggemma-300M-GGUF/embeddinggemma-300M-Q8_0.gguf", "name": "embeddinggemma-300M-Q8_0", "backend": "llama-cpp"}'
+
+# Query Expansion 模型（chat）
+curl http://localhost:8080/models/apply -H "Authorization: Bearer sk-projecthub-secret-123" \
+  -d '{"url": "huggingface://lm-kit/qmd-query-expansion-1.7B-GGUF/qmd-query-expansion-1.7B-q4_k_m.gguf", "name": "qmd-query-expansion-1.7B-q4_k_m", "backend": "llama-cpp"}'
+
+# Reranker 模型（cross-encoder → /v1/rerank）
+curl http://localhost:8080/models/apply -H "Authorization: Bearer sk-projecthub-secret-123" \
+  -d '{"url": "huggingface://lm-kit/qwen3-reranker-0.6B-GGUF/qwen3-reranker-0.6b-q8_0.gguf", "name": "qwen3-reranker-0.6b-q8_0", "backend": "llama-cpp"}'
+```
+
+#### 3. 驗證端點
+
+```bash
+# Embedding
+curl http://localhost:8080/v1/embeddings \
+  -H "Authorization: Bearer sk-projecthub-secret-123" \
+  -d '{"model":"embeddinggemma-300M-Q8_0","input":"test"}'
+
+# Query Expansion（chat completions）
+curl http://localhost:8080/v1/chat/completions \
+  -H "Authorization: Bearer sk-projecthub-secret-123" \
+  -d '{"model":"qmd-query-expansion-1.7B-q4_k_m","messages":[{"role":"user","content":"ping"}]}'
+
+# Reranker（/v1/rerank endpoint）
+curl http://localhost:8080/v1/rerank \
+  -H "Authorization: Bearer sk-projecthub-secret-123" \
+  -d '{"model":"qwen3-reranker-0.6b-q8_0","query":"auth","documents":["JWT login","avatar upload"]}'
+```
+
+#### 4. `.projecthub.json` 設定
+
+```json
+{
+  "embedding": {
+    "provider": "openai",
+    "baseUrl": "http://localhost:8080/v1",
+    "apiKey": "sk-projecthub-secret-123",
+    "model": "embeddinggemma-300M-Q8_0",
+    "dimension": 256
+  },
+  "llm": {
+    "provider": "openai-compatible",
+    "baseUrl": "http://localhost:8080/v1",
+    "apiKey": "sk-projecthub-secret-123",
+    "model": "qmd-query-expansion-1.7B-q4_k_m",
+    "rerankerModel": "qwen3-reranker-0.6b-q8_0",
+    "rerankerStrategy": "endpoint"
+  }
+}
+```
+
+> **`rerankerStrategy`**：`"chat"`（預設）透過 chat completions 請模型以 JSON 評分；`"endpoint"` 透過 `/v1/rerank` API 呼叫專用 cross-encoder reranker（Jina/Cohere/LocalAI 格式）。
+
 ### 使用 OpenAI
 
 ```json
@@ -385,6 +476,7 @@ ranks 11+:   finalScore = 0.40 × rrfScore + 0.60 × rerankerScore
     "baseUrl": "https://api.openai.com/v1",
     "model": "gpt-4o-mini",
     "rerankerModel": "",             // 可選，預設使用 model
+    "rerankerStrategy": "chat",      // "chat" 或 "endpoint"（/v1/rerank）
     "cacheTTLMs": 3600000            // LLM 快取 TTL（1 小時）
   },
   "chunking": { "maxTokensPerChunk": 512, "overlapLines": 2 },
@@ -462,7 +554,7 @@ SKILL.md 位於 `.claude/skills/projecthub/SKILL.md`，觸發詞包含：`projec
 |------|------|
 | `npm run build` | 編譯 TypeScript |
 | `npm run dev` | 監看模式編譯 |
-| `npm test` | 執行所有測試（109 tests） |
+| `npm test` | 執行所有測試（117 tests） |
 | `npm run test:unit` | 僅單元測試 |
 | `npm run test:integration` | 僅整合測試 |
 | `npm run test:coverage` | 覆蓋率報告 |
@@ -569,7 +661,7 @@ ProjectHub/
 │       ├── commands/         # scan, index, search, session,
 │       │                     # health, init, mcp, context
 │       └── formatters/       # ProgressiveDisclosureFormatter
-├── tests/                    # unit/ + integration/（109 tests）
+├── tests/                    # unit/ + integration/（117 tests）
 ├── assets/skill/             # SKILL.md 模板
 ├── .claude/                  # Claude Code 整合
 └── vault/                    # Obsidian 知識庫

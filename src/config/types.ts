@@ -62,6 +62,8 @@ export interface LLMConfig {
   model: string;
   /** Re-ranking 用途的模型（可選，預設使用 model） */
   rerankerModel?: string;
+  /** Reranker 策略：'chat' 用 chat completions 請模型評分，'endpoint' 用 /v1/rerank API */
+  rerankerStrategy?: 'chat' | 'endpoint';
   /** 快取 TTL（毫秒，預設 1 小時） */
   cacheTTLMs: number;
 }
