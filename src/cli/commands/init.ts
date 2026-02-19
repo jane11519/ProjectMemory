@@ -11,9 +11,16 @@ interface InitResult {
   skillFilesSkipped: number;
   settingsMerged: boolean;
   configCreated: boolean;
+  mcpConfigured: boolean;
   vaultDirsCreated: number;
   dbInitialized: boolean;
   dbError?: string;
+}
+
+/** .mcp.json 的結構型別 */
+interface McpConfig {
+  mcpServers?: Record<string, { command: string; args: string[] }>;
+  [key: string]: unknown;
 }
 
 /** Claude Code settings.json 的 hook 定義 */
@@ -219,6 +226,41 @@ function ensureVaultDirs(repoRoot: string): number {
 }
 
 /**
+ * 確保目標專案的 .mcp.json 中包含 ProjectHub MCP server 設定
+ * 若檔案不存在則建立，若已存在則 merge（不覆蓋使用者的其他 MCP servers）
+ * @returns 是否有實際寫入變更
+ */
+function ensureMcpConfig(repoRoot: string): boolean {
+  const mcpPath = path.join(repoRoot, '.mcp.json');
+  const projecthubServer = {
+    command: 'npx',
+    args: ['-y', 'projecthub', 'mcp'],
+  };
+
+  let existing: McpConfig = {};
+  if (fs.existsSync(mcpPath)) {
+    const raw = fs.readFileSync(mcpPath, 'utf-8');
+    existing = JSON.parse(raw) as McpConfig;
+  }
+
+  // 已有 projecthub 設定，不覆蓋
+  if (existing.mcpServers?.projecthub) {
+    return false;
+  }
+
+  const merged: McpConfig = {
+    ...existing,
+    mcpServers: {
+      ...existing.mcpServers,
+      projecthub: projecthubServer,
+    },
+  };
+
+  fs.writeFileSync(mcpPath, JSON.stringify(merged, null, 2) + '\n', 'utf-8');
+  return true;
+}
+
+/**
  * 動態 import DatabaseManager 並初始化 SQLite DB
  * 失敗時只回傳錯誤訊息，不中斷流程
  */
@@ -244,6 +286,7 @@ function formatTextResult(result: InitResult): string {
     `Skill files installed: ${result.skillFilesCopied} file(s)${result.skillFilesSkipped > 0 ? ` (${result.skillFilesSkipped} skipped)` : ''}`,
     `Settings merged: ${result.settingsMerged ? 'yes' : 'no changes needed'}`,
     `Config created: ${result.configCreated ? 'yes (new .projecthub.json)' : 'already exists'}`,
+    `MCP config: ${result.mcpConfigured ? 'yes (projecthub added to .mcp.json)' : 'already configured'}`,
     `Vault directories created: ${result.vaultDirsCreated}`,
     `Database initialized: ${result.dbInitialized ? 'yes' : `no (${result.dbError ?? 'skipped'})`}`,
     '',
@@ -252,7 +295,8 @@ function formatTextResult(result: InitResult): string {
     '  2. Set OPENAI_API_KEY environment variable',
     '  3. Run: npx projecthub scan',
     '  4. Run: npx projecthub index build',
-    '  5. Use /projecthub in Claude Code',
+    '  5. Restart Claude Code to activate MCP server',
+    '  6. Use /projecthub in Claude Code',
   ];
   return lines.join('\n');
 }
@@ -311,7 +355,10 @@ export function registerInitCommand(program: Command): void {
       // 4. 建立 vault 目錄結構
       const vaultDirsCreated = ensureVaultDirs(repoRoot);
 
-      // 5. 初始化資料庫
+      // 5. 確保 .mcp.json 包含 projecthub MCP server
+      const mcpConfigured = ensureMcpConfig(repoRoot);
+
+      // 6. 初始化資料庫
       let dbInitialized = false;
       let dbError: string | undefined;
 
@@ -329,6 +376,7 @@ export function registerInitCommand(program: Command): void {
         skillFilesSkipped: skipped,
         settingsMerged,
         configCreated,
+        mcpConfigured,
         vaultDirsCreated,
         dbInitialized,
         dbError,

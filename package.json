@@ -27,7 +27,8 @@
   },
   "files": [
     "dist/",
-    "assets/"
+    "assets/",
+    ".claude-plugin/"
   ],
   "scripts": {
     "build": "tsc",

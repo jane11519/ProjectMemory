@@ -77,19 +77,41 @@ Query
 - **Node.js** 18+
 - **OPENAI_API_KEY** 環境變數（用於向量嵌入，或設定 Ollama 等本地替代方案）
 
-### 安裝與建置
+### 安裝方式
+
+#### 方式 A：Claude Code Plugin Marketplace（推薦）
 
 ```bash
-npm install
-npm run build
-```
+# 1. 在 Claude Code 中安裝 plugin（自動設定 MCP Server + Skills）
+/plugin marketplace add jane11519/ProjectMemory
+/plugin install projecthub@ProjectMemory
 
-### 初始化
-
-```bash
-# 一鍵初始化（skill 檔案、hooks、vault 目錄、資料庫）
+# 2. 初始化 vault 目錄結構與資料庫
 npx projecthub init
 ```
+
+#### 方式 B：手動安裝
+
+```bash
+# 1. 初始化（自動建立 vault、DB、hooks、.mcp.json）
+npx projecthub init
+
+# MCP server 已自動設定到 .mcp.json
+# 重啟 Claude Code 即可使用
+```
+
+#### 方式 C：全域安裝 + MCP 手動註冊
+
+```bash
+npm install -g projecthub
+npx projecthub init
+claude mcp add --transport stdio projecthub -- projecthub mcp
+```
+
+> **Windows 注意事項**：若 `npx` 直接執行 MCP server 出現問題，可改用 `cmd /c npx` wrapper：
+> ```json
+> { "command": "cmd", "args": ["/c", "npx", "-y", "projecthub", "mcp"] }
+> ```
 
 ### 典型工作流程
 
@@ -110,18 +132,6 @@ npx projecthub search "auth architecture" --mode deep --format json
 
 # 6. 啟動 MCP Server
 npx projecthub mcp
-```
-
----
-
-## 安裝到其他專案
-
-```bash
-# 從 GitHub 安裝
-npm install github:jane11519/ProjectMemory
-
-# 初始化
-npx projecthub init
 ```
 
 ---
@@ -232,18 +242,20 @@ ProjectHub 可作為 MCP server 運行，提供 6 個工具供 LLM client 使用
 
 ### Claude Code 設定
 
-在 `.claude/settings.json` 中加入：
+`npx projecthub init` 會自動在專案根目錄建立 `.mcp.json`，團隊成員可透過版本控制共享此設定：
 
 ```json
 {
   "mcpServers": {
     "projecthub": {
       "command": "npx",
-      "args": ["projecthub", "mcp", "--repo-root", "."]
+      "args": ["-y", "projecthub", "mcp"]
     }
   }
 }
 ```
+
+或手動在 `.claude/settings.json` 中加入相同設定。
 
 ### 分數解讀
 
