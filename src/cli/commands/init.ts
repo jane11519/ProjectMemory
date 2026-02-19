@@ -179,6 +179,13 @@ function ensureProjectConfig(repoRoot: string): boolean {
       weights: DEFAULT_CONFIG.search.weights,
       fts5FieldWeights: DEFAULT_CONFIG.search.fts5FieldWeights,
     },
+    llm: {
+      provider: DEFAULT_CONFIG.llm.provider,
+      baseUrl: DEFAULT_CONFIG.llm.baseUrl,
+      model: DEFAULT_CONFIG.llm.model,
+      rerankerModel: '',
+      cacheTTLMs: DEFAULT_CONFIG.llm.cacheTTLMs,
+    },
     chunking: DEFAULT_CONFIG.chunking,
     session: DEFAULT_CONFIG.session,
     namespacePatterns: DEFAULT_CONFIG.namespacePatterns,
