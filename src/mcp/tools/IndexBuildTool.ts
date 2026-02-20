@@ -24,7 +24,7 @@ export function registerIndexBuildTool(server: McpServer, deps: McpDependencies)
         ensureRootNamespace(deps.db);
 
         const mdParser = new MarkdownParser();
-        const chunker = new ChunkingStrategy();
+        const chunker = new ChunkingStrategy(config.chunking.splitThresholdTokens);
         const vault = new FileSystemVaultAdapter();
         const useCase = new IndexUseCase(
           deps.db, deps.fts5, deps.vec,

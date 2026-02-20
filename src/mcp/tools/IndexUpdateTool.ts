@@ -22,7 +22,7 @@ export function registerIndexUpdateTool(server: McpServer, deps: McpDependencies
         const dirtyFilePath = path.join(deps.repoRoot, config.index.dirtyFilePath);
 
         const mdParser = new MarkdownParser();
-        const chunker = new ChunkingStrategy();
+        const chunker = new ChunkingStrategy(config.chunking.splitThresholdTokens);
         const vault = new FileSystemVaultAdapter();
         const useCase = new IndexUseCase(
           deps.db, deps.fts5, deps.vec,

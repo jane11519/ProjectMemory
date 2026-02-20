@@ -87,7 +87,7 @@ function createIndexUseCase(dbMgr: DatabaseManager, config: ReturnType<typeof lo
   const fts5 = new FTS5Adapter(db);
   const vec = new SqliteVecAdapter(db);
   const mdParser = new MarkdownParser();
-  const chunker = new ChunkingStrategy();
+  const chunker = new ChunkingStrategy(config.chunking.splitThresholdTokens);
   const vault = new FileSystemVaultAdapter();
   const embedding = new OpenAIEmbeddingAdapter({
     apiKey: config.embedding.apiKey ?? process.env.OPENAI_API_KEY ?? '',

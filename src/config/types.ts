@@ -71,6 +71,8 @@ export interface LLMConfig {
 /** Chunk 切分設定 */
 export interface ChunkingConfig {
   maxTokensPerChunk: number;
+  /** 超過此閾值的 chunk 會被二次切分（預設較保守，適應 CJK/Markdown 的 token 估算誤差） */
+  splitThresholdTokens: number;
   overlapLines: number;
 }
 

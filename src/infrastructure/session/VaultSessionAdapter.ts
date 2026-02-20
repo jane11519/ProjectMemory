@@ -95,7 +95,7 @@ export class VaultSessionAdapter implements SessionPort {
 
     let content = `---
 session_id: "${session.sessionId}"
-project_dir: "${session.projectDir}"
+project_dir: '${session.projectDir}'
 started_at: ${session.startedAt}
 last_saved_at: ${session.lastSavedAt}
 turn_count: ${session.turnCount}

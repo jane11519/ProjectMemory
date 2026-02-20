@@ -46,7 +46,8 @@ export const DEFAULT_CONFIG: ProjMemConfig = {
     cacheTTLMs: 3600000, // 1 小時
   },
   chunking: {
-    maxTokensPerChunk: 512,
+    maxTokensPerChunk: 2048,
+    splitThresholdTokens: 1500,
     overlapLines: 2,
   },
   session: {

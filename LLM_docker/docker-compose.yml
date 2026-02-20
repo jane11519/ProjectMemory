@@ -1,0 +1,96 @@
+services:
+
+  llm:
+    image: ghcr.io/ggml-org/llama.cpp:server-cuda
+    container_name: llm
+    restart: unless-stopped
+    expose:
+      - "8080"
+    volumes:
+      - ./models/llm:/models
+    command: >
+      --model /models/qmd-query-expansion-1.7B-q4_k_m.gguf
+      --port 8080
+      --host 0.0.0.0
+      --n-gpu-layers 99
+      --ctx-size 8192
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["0"]
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://127.0.0.1:8080/health || exit 1"]
+      interval: 10s
+      retries: 10
+
+  embedding:
+    image: ghcr.io/ggml-org/llama.cpp:server-cuda
+    container_name: embedding
+    restart: unless-stopped
+    expose:
+      - "8080"
+    volumes:
+      - ./models/embedding:/models
+    command: >
+      --model /models/embeddinggemma-300M-Q8_0.gguf
+      --port 8080
+      --host 0.0.0.0
+      --n-gpu-layers 99
+      --embedding
+      --ubatch-size 2048
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["0"]
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://127.0.0.1:8080/health || exit 1"]
+      interval: 10s
+      retries: 10
+
+  reranker:
+    image: ghcr.io/ggml-org/llama.cpp:server-cuda
+    container_name: reranker
+    restart: unless-stopped
+    expose:
+      - "8080"
+    volumes:
+      - ./models/reranker:/models
+    command: >
+      --model /models/qwen3-reranker-0.6b-q8_0.gguf
+      --port 8080
+      --host 0.0.0.0
+      --n-gpu-layers 99
+      --reranking
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["0"]
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://127.0.0.1:8080/health || exit 1"]
+      interval: 10s
+      retries: 10
+
+  nginx:
+    image: nginx:alpine
+    container_name: gateway
+    restart: unless-stopped
+    ports:
+      - "18080:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf.template:ro
+    environment:
+      - API_KEY=${API_KEY}
+    command: /bin/sh -c "envsubst '$$API_KEY' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf && nginx -g 'daemon off;'"
+    depends_on:
+      - llm
+      - embedding
+      - reranker

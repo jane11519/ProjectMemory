@@ -31,7 +31,8 @@
     }
   },
   "chunking": {
-    "maxTokensPerChunk": 512,
+    "maxTokensPerChunk": 2048,
+    "splitThresholdTokens": 1500,
     "overlapLines": 2
   },
   "llm": {
