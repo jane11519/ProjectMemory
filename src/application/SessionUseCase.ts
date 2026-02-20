@@ -103,15 +103,40 @@ export class SessionUseCase {
     const session = this.sessionPort.getSession(sessionId);
     if (!session) return undefined;
 
+    const merged = this.mergeSummary(session.summaryJson, summary);
+
     const updated: Session = {
       ...session,
-      summaryJson: JSON.stringify(summary),
+      summaryJson: JSON.stringify(merged),
       lastSavedAt: Date.now(),
     };
 
     this.sessionPort.saveSession(updated);
     await this.sessionPort.writeSessionMarkdown(updated, this.vaultSessionsDir);
     return updated;
+  }
+
+  /**
+   * 合併既有摘要與新摘要：overview 以新值覆寫，陣列欄位去重合併
+   * 若既有 JSON 不存在或無法解析，直接採用新摘要
+   */
+  private mergeSummary(existingJson: string | undefined, incoming: SessionSummary): SessionSummary {
+    if (!existingJson) return incoming;
+
+    let existing: SessionSummary;
+    try {
+      existing = JSON.parse(existingJson);
+    } catch {
+      return incoming;
+    }
+
+    return {
+      overview: incoming.overview,
+      decisions: [...new Set([...(existing.decisions ?? []), ...incoming.decisions])],
+      outcomes: [...new Set([...(existing.outcomes ?? []), ...incoming.outcomes])],
+      openItems: [...new Set([...(existing.openItems ?? []), ...incoming.openItems])],
+      tags: [...new Set([...(existing.tags ?? []), ...incoming.tags])],
+    };
   }
 
   /**

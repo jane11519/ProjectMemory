@@ -9,6 +9,8 @@ interface InitResult {
   repoRoot: string;
   skillFilesCopied: number;
   skillFilesSkipped: number;
+  commandFilesCopied: number;
+  commandFilesSkipped: number;
   settingsMerged: boolean;
   configCreated: boolean;
   mcpConfigured: boolean;
@@ -332,6 +334,7 @@ function formatTextResult(result: InitResult): string {
   const lines = [
     `ProjectHub initialized in: ${result.repoRoot}`,
     `Skill files installed: ${result.skillFilesCopied} file(s)${result.skillFilesSkipped > 0 ? ` (${result.skillFilesSkipped} skipped)` : ''}`,
+    `Commands installed: ${result.commandFilesCopied} file(s)${result.commandFilesSkipped > 0 ? ` (${result.commandFilesSkipped} skipped)` : ''}`,
     `Settings merged: ${result.settingsMerged ? 'yes' : 'no changes needed'}`,
     `Config created: ${result.configCreated ? 'yes (new .projecthub.json)' : 'already exists'}`,
     `MCP config: ${result.mcpConfigured ? 'yes (projecthub added to .mcp.json)' : 'already configured'}`,
@@ -374,6 +377,17 @@ export function registerInitCommand(program: Command): void {
 
       const skillDest = path.join(repoRoot, '.claude', 'skills', 'projecthub');
       const { copied, skipped } = copyDirRecursive(assetsDir, skillDest, force);
+
+      // 1b. 複製 commands 到 .claude/commands/（slash commands）
+      const commandsAssetsDir = path.join(path.dirname(assetsDir), 'commands');
+      let commandsCopied = 0;
+      let commandsSkipped = 0;
+      if (fs.existsSync(commandsAssetsDir)) {
+        const commandsDest = path.join(repoRoot, '.claude', 'commands');
+        const cmdResult = copyDirRecursive(commandsAssetsDir, commandsDest, force);
+        commandsCopied = cmdResult.copied;
+        commandsSkipped = cmdResult.skipped;
+      }
 
       // 2. 合併 .claude/settings.json
       const settingsPath = path.join(repoRoot, '.claude', 'settings.json');
@@ -422,6 +436,8 @@ export function registerInitCommand(program: Command): void {
         repoRoot,
         skillFilesCopied: copied,
         skillFilesSkipped: skipped,
+        commandFilesCopied: commandsCopied,
+        commandFilesSkipped: commandsSkipped,
         settingsMerged,
         configCreated,
         mcpConfigured,

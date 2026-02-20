@@ -254,6 +254,62 @@ describe('SessionUseCase', () => {
   });
 
   /**
+   * Scenario: updateSummary 連續呼叫應合併摘要
+   * Given 一個已有 summary 的 session
+   * When 再次呼叫 updateSummary 帶有部分重複、部分新增的資料
+   * Then overview 應以新值覆寫
+   * And 陣列欄位應去重合併（保留既有 + 新增）
+   */
+  it('should merge summary on consecutive updateSummary calls', async () => {
+    await useCase.save({
+      sessionId: 'merge-test',
+      projectDir: '/proj',
+      turnCount: 5,
+      rollingSummary: 'Working on merge.',
+      decisions: [],
+      searchFootprint: [],
+      status: 'active',
+    });
+
+    // 第一次 updateSummary
+    await useCase.updateSummary('merge-test', {
+      overview: 'First overview.',
+      decisions: ['Use JWT', 'Use bcrypt'],
+      outcomes: ['Created auth module'],
+      openItems: ['Add tests'],
+      tags: ['auth', 'security'],
+    });
+
+    // 第二次 updateSummary：部分重複 + 部分新增
+    const result = await useCase.updateSummary('merge-test', {
+      overview: 'Updated overview with more detail.',
+      decisions: ['Use bcrypt', 'Add rate limiter'],
+      outcomes: ['Created auth module', 'Added login endpoint'],
+      openItems: ['Add tests', 'Deploy to staging'],
+      tags: ['security', 'api'],
+    });
+
+    expect(result).toBeDefined();
+    const parsed = JSON.parse(result!.summaryJson!);
+
+    // overview 應以新值覆寫
+    expect(parsed.overview).toBe('Updated overview with more detail.');
+
+    // 陣列欄位應去重合併
+    expect(parsed.decisions).toEqual(expect.arrayContaining(['Use JWT', 'Use bcrypt', 'Add rate limiter']));
+    expect(parsed.decisions).toHaveLength(3);
+
+    expect(parsed.outcomes).toEqual(expect.arrayContaining(['Created auth module', 'Added login endpoint']));
+    expect(parsed.outcomes).toHaveLength(2);
+
+    expect(parsed.openItems).toEqual(expect.arrayContaining(['Add tests', 'Deploy to staging']));
+    expect(parsed.openItems).toHaveLength(2);
+
+    expect(parsed.tags).toEqual(expect.arrayContaining(['auth', 'security', 'api']));
+    expect(parsed.tags).toHaveLength(3);
+  });
+
+  /**
    * Scenario: updateSummary 不存在的 session
    * Given 一個不存在的 session ID
    * When 呼叫 updateSummary
