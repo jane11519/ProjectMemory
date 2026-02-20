@@ -141,9 +141,9 @@ export function registerSessionCommand(program: Command): void {
         return;
       }
 
-      // 3. 複製原始 JSONL 到 vault/.projecthub/transcripts/
+      // 3. 複製原始 JSONL 到 vault/.projmem/transcripts/
       const config = loadConfig(repoRoot);
-      const transcriptsDir = path.join(repoRoot, config.vault.root, '.projecthub', 'transcripts');
+      const transcriptsDir = path.join(repoRoot, config.vault.root, '.projmem', 'transcripts');
       const backupPath = path.join(transcriptsDir, `${summary.sessionId}.jsonl`);
 
       if (!fs.existsSync(backupPath)) {

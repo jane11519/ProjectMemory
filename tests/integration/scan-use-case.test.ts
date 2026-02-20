@@ -7,7 +7,7 @@ import path from 'node:path';
 import os from 'node:os';
 
 describe('ScanUseCase', () => {
-  const tmpDir = path.join(os.tmpdir(), 'projecthub-scan-' + Date.now());
+  const tmpDir = path.join(os.tmpdir(), 'projmem-scan-' + Date.now());
   let useCase: ScanUseCase;
 
   beforeEach(() => {

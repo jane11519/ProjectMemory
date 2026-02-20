@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { loadConfig, type ProjectHubConfig } from '../../../src/config/ConfigLoader.js';
+import { loadConfig, type ProjMemConfig } from '../../../src/config/ConfigLoader.js';
 
 describe('ConfigLoader', () => {
   it('should return default config when no file exists', () => {

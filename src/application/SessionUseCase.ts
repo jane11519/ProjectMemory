@@ -141,12 +141,12 @@ export class SessionUseCase {
 
   /**
    * 從 vault 讀取完整 transcript
-   * transcript 備份位於 {vaultRoot}/.projecthub/transcripts/{sessionId}.jsonl
+   * transcript 備份位於 {vaultRoot}/.projmem/transcripts/{sessionId}.jsonl
    */
   getTranscript(sessionId: string): TranscriptSummary | undefined {
     if (!this.vaultRoot) return undefined;
 
-    const backupPath = path.join(this.vaultRoot, '.projecthub', 'transcripts', `${sessionId}.jsonl`);
+    const backupPath = path.join(this.vaultRoot, '.projmem', 'transcripts', `${sessionId}.jsonl`);
     if (!fs.existsSync(backupPath)) return undefined;
 
     const jsonlContent = fs.readFileSync(backupPath, 'utf-8');

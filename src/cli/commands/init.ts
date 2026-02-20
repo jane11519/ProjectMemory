@@ -5,12 +5,11 @@ import { fileURLToPath } from 'node:url';
 import { DEFAULT_CONFIG } from '../../config/defaults.js';
 
 /** init 指令的結果型別 */
-interface InitResult {
+export interface InitResult {
   repoRoot: string;
-  skillFilesCopied: number;
-  skillFilesSkipped: number;
-  commandFilesCopied: number;
-  commandFilesSkipped: number;
+  pluginFilesCopied: number;
+  pluginFilesSkipped: number;
+  pluginRegistered: boolean;
   settingsMerged: boolean;
   configCreated: boolean;
   mcpConfigured: boolean;
@@ -45,7 +44,7 @@ interface HookMatcherGroup {
 }
 
 /** Claude Code settings.json 的結構 */
-interface ClaudeSettings {
+export interface ClaudeSettings {
   hooks?: {
     PostToolUse?: HookMatcherGroup[];
     TaskCompleted?: HookMatcherGroup[];
@@ -56,13 +55,13 @@ interface ClaudeSettings {
 }
 
 /**
- * 從 import.meta.url 解析出 package root 下的 assets/skill/ 目錄
- * dist/cli/commands/init.js → 往上 3 層 → package root → assets/skill/
+ * 從 import.meta.url 解析出 package root 下的 assets/plugin/ 目錄
+ * dist/cli/commands/init.js → 往上 3 層 → package root → assets/plugin/
  */
-function getAssetsDir(): string {
+export function getAssetsDir(): string {
   const thisFile = fileURLToPath(import.meta.url);
   const packageRoot = path.resolve(path.dirname(thisFile), '..', '..', '..');
-  return path.join(packageRoot, 'assets', 'skill');
+  return path.join(packageRoot, 'assets', 'plugin');
 }
 
 /**
@@ -72,7 +71,7 @@ function getAssetsDir(): string {
  * @param force - 是否覆寫已存在的檔案
  * @returns 複製與跳過的檔案數
  */
-function copyDirRecursive(
+export function copyDirRecursive(
   src: string,
   dest: string,
   force: boolean
@@ -104,9 +103,12 @@ function copyDirRecursive(
   return { copied, skipped };
 }
 
+/** 舊版 hook 的 command 前綴（用於遷移偵測） */
+const LEGACY_HOOK_PREFIX = 'bash .claude/skills/projecthub/scripts/';
+
 /**
- * ProjectHub 預設的 hook 定義
- * 使用 .claude/skills/projecthub/scripts/ 相對路徑
+ * projmem 預設的 hook 定義
+ * 使用 .claude/plugins/projmem/scripts/ 相對路徑
  */
 function getDefaultHooks(): Required<NonNullable<ClaudeSettings['hooks']>> {
   return {
@@ -115,7 +117,7 @@ function getDefaultHooks(): Required<NonNullable<ClaudeSettings['hooks']>> {
         matcher: 'Write|Edit',
         hooks: [{
           type: 'command',
-          command: 'bash .claude/skills/projecthub/scripts/track-dirty.sh "$TOOL_INPUT_FILE_PATH"',
+          command: 'bash .claude/plugins/projmem/scripts/track-dirty.sh "$TOOL_INPUT_FILE_PATH"',
           timeout: 5,
         }],
       },
@@ -124,7 +126,7 @@ function getDefaultHooks(): Required<NonNullable<ClaudeSettings['hooks']>> {
       {
         hooks: [{
           type: 'command',
-          command: 'bash .claude/skills/projecthub/scripts/on-task-completed.sh',
+          command: 'bash .claude/plugins/projmem/scripts/on-task-completed.sh',
           timeout: 120,
         }],
       },
@@ -133,7 +135,7 @@ function getDefaultHooks(): Required<NonNullable<ClaudeSettings['hooks']>> {
       {
         hooks: [{
           type: 'command',
-          command: 'bash .claude/skills/projecthub/scripts/on-stop.sh',
+          command: 'bash .claude/plugins/projmem/scripts/on-stop.sh',
           timeout: 60,
           async: true,
         }],
@@ -145,12 +147,16 @@ function getDefaultHooks(): Required<NonNullable<ClaudeSettings['hooks']>> {
 /**
  * 合併 hooks 到現有 settings，以 command 字串去重
  * 不會覆寫使用者已有的其他 hooks
+ * 自動遷移舊版 .claude/skills/projecthub/ 路徑
  */
-function mergeSettings(existing: ClaudeSettings): ClaudeSettings {
+export function mergeSettings(existing: ClaudeSettings): ClaudeSettings {
   const result = { ...existing };
   if (!result.hooks) {
     result.hooks = {};
   }
+
+  // 遷移舊版 hook 路徑
+  migrateLegacyHookPaths(result.hooks);
 
   const defaultHooks = getDefaultHooks();
 
@@ -174,11 +180,32 @@ function mergeSettings(existing: ClaudeSettings): ClaudeSettings {
 }
 
 /**
- * 條件建立 .projecthub.json（從 DEFAULT_CONFIG 程式化產生）
+ * 將舊版 .claude/skills/projecthub/scripts/ 路徑遷移為
+ * .claude/plugins/projmem/scripts/
+ */
+function migrateLegacyHookPaths(hooks: NonNullable<ClaudeSettings['hooks']>): void {
+  const OLD_PLUGIN_PREFIX = 'bash .claude/plugins/projecthub/scripts/';
+  const NEW_PREFIX = 'bash .claude/plugins/projmem/scripts/';
+  for (const groups of Object.values(hooks)) {
+    if (!groups) continue;
+    for (const group of groups) {
+      for (const hook of group.hooks ?? []) {
+        if (hook.command?.startsWith(LEGACY_HOOK_PREFIX)) {
+          hook.command = hook.command.replace(LEGACY_HOOK_PREFIX, NEW_PREFIX);
+        } else if (hook.command?.startsWith(OLD_PLUGIN_PREFIX)) {
+          hook.command = hook.command.replace(OLD_PLUGIN_PREFIX, NEW_PREFIX);
+        }
+      }
+    }
+  }
+}
+
+/**
+ * 條件建立 .projmem.json（從 DEFAULT_CONFIG 程式化產生）
  * @returns 是否新建了設定檔
  */
-function ensureProjectConfig(repoRoot: string): boolean {
-  const configPath = path.join(repoRoot, '.projecthub.json');
+export function ensureProjectConfig(repoRoot: string): boolean {
+  const configPath = path.join(repoRoot, '.projmem.json');
   if (fs.existsSync(configPath)) {
     return false;
   }
@@ -220,11 +247,11 @@ function ensureProjectConfig(repoRoot: string): boolean {
  * 建立 vault 目錄結構
  * @returns 建立的目錄數
  */
-function ensureVaultDirs(repoRoot: string): number {
+export function ensureVaultDirs(repoRoot: string): number {
   const vaultRoot = path.join(repoRoot, DEFAULT_CONFIG.vault.root);
   const dirs = [
     ...DEFAULT_CONFIG.vault.folders.map((f) => path.join(vaultRoot, f)),
-    path.join(vaultRoot, '.projecthub'),
+    path.join(vaultRoot, '.projmem'),
   ];
 
   let created = 0;
@@ -239,12 +266,12 @@ function ensureVaultDirs(repoRoot: string): number {
   const gitignorePath = path.join(vaultRoot, '.gitignore');
   if (!fs.existsSync(gitignorePath)) {
     const gitignoreContent = [
-      '# ProjectHub SQLite database and runtime artifacts',
-      '.projecthub/index.db',
-      '.projecthub/index.db-wal',
-      '.projecthub/index.db-shm',
-      '.projecthub/dirty-files.txt',
-      '.projecthub/audit.log',
+      '# projmem SQLite database and runtime artifacts',
+      '.projmem/index.db',
+      '.projmem/index.db-wal',
+      '.projmem/index.db-shm',
+      '.projmem/dirty-files.txt',
+      '.projmem/audit.log',
       '',
     ].join('\n');
     fs.writeFileSync(gitignorePath, gitignoreContent, 'utf-8');
@@ -268,15 +295,15 @@ function ensureGitignoreEntry(repoRoot: string, entry: string): void {
 }
 
 /**
- * 確保目標專案的 .mcp.json 中包含 ProjectHub MCP server 設定
+ * 確保目標專案的 .mcp.json 中包含 projmem MCP server 設定
  * 若檔案不存在則建立，若已存在則 merge（不覆蓋使用者的其他 MCP servers）
  * @returns 是否有實際寫入變更
  */
-function ensureMcpConfig(repoRoot: string): boolean {
+export function ensureMcpConfig(repoRoot: string): boolean {
   const mcpPath = path.join(repoRoot, '.mcp.json');
-  const projecthubServer: McpServerEntry = {
+  const projmemServer: McpServerEntry = {
     command: 'npx',
-    args: ['-y', 'projecthub', 'mcp'],
+    args: ['-y', 'projmem', 'mcp'],
     env: {
       OPENAI_API_KEY: '${OPENAI_API_KEY}',
       OPENAI_BASE_URL: '${OPENAI_BASE_URL}',
@@ -289,8 +316,8 @@ function ensureMcpConfig(repoRoot: string): boolean {
     existing = JSON.parse(raw) as McpConfig;
   }
 
-  // 已有 projecthub 設定，不覆蓋
-  if (existing.mcpServers?.projecthub) {
+  // 已有 projmem 設定，不覆蓋
+  if (existing.mcpServers?.projmem) {
     return false;
   }
 
@@ -298,7 +325,7 @@ function ensureMcpConfig(repoRoot: string): boolean {
     ...existing,
     mcpServers: {
       ...existing.mcpServers,
-      projecthub: projecthubServer,
+      projmem: projmemServer,
     },
   };
 
@@ -314,7 +341,7 @@ function ensureMcpConfig(repoRoot: string): boolean {
  * 動態 import DatabaseManager 並初始化 SQLite DB
  * 失敗時只回傳錯誤訊息，不中斷流程
  */
-async function initDatabase(repoRoot: string): Promise<{ ok: boolean; error?: string }> {
+export async function initDatabase(repoRoot: string): Promise<{ ok: boolean; error?: string }> {
   try {
     const { DatabaseManager } = await import(
       '../../infrastructure/sqlite/DatabaseManager.js'
@@ -330,35 +357,139 @@ async function initDatabase(repoRoot: string): Promise<{ ok: boolean; error?: st
 }
 
 /** 格式化 init 結果為人類可讀文字 */
-function formatTextResult(result: InitResult): string {
+export function formatTextResult(result: InitResult): string {
   const lines = [
-    `ProjectHub initialized in: ${result.repoRoot}`,
-    `Skill files installed: ${result.skillFilesCopied} file(s)${result.skillFilesSkipped > 0 ? ` (${result.skillFilesSkipped} skipped)` : ''}`,
-    `Commands installed: ${result.commandFilesCopied} file(s)${result.commandFilesSkipped > 0 ? ` (${result.commandFilesSkipped} skipped)` : ''}`,
+    `projmem initialized in: ${result.repoRoot}`,
+    `Plugin files installed: ${result.pluginFilesCopied} file(s)${result.pluginFilesSkipped > 0 ? ` (${result.pluginFilesSkipped} skipped)` : ''}`,
+    `Plugin registered: ${result.pluginRegistered ? 'yes' : 'already registered'}`,
     `Settings merged: ${result.settingsMerged ? 'yes' : 'no changes needed'}`,
-    `Config created: ${result.configCreated ? 'yes (new .projecthub.json)' : 'already exists'}`,
-    `MCP config: ${result.mcpConfigured ? 'yes (projecthub added to .mcp.json)' : 'already configured'}`,
+    `Config created: ${result.configCreated ? 'yes (new .projmem.json)' : 'already exists'}`,
+    `MCP config: ${result.mcpConfigured ? 'yes (projmem added to .mcp.json)' : 'already configured'}`,
     `Vault directories created: ${result.vaultDirsCreated}`,
     `Database initialized: ${result.dbInitialized ? 'yes' : `no (${result.dbError ?? 'skipped'})`}`,
     '',
     'Next steps:',
     '  1. Add Markdown notes to vault/code-notes/',
     '  2. Set OPENAI_API_KEY and OPENAI_BASE_URL in .mcp.json env field',
-    '  3. Run: npx projecthub scan',
-    '  4. Run: npx projecthub index build',
+    '  3. Run: npx projmem scan',
+    '  4. Run: npx projmem index build',
     '  5. Restart Claude Code to activate MCP server',
-    '  6. Use /projecthub in Claude Code',
+    '  6. Use projmem_search / projmem_deep_search MCP tools in Claude Code',
   ];
   return lines.join('\n');
+}
+
+/** installed_plugins.json 的結構型別 */
+interface InstalledPluginsFile {
+  version: number;
+  plugins: Record<string, InstalledPluginEntry[]>;
+}
+
+interface InstalledPluginEntry {
+  scope: 'user' | 'local';
+  projectPath?: string;
+  installPath: string;
+  version: string;
+  installedAt: string;
+  lastUpdated: string;
+}
+
+/**
+ * 取得 Claude Code 的 installed_plugins.json 路徑
+ * 跨平台支援：Windows → %APPDATA%/claude/plugins/
+ *              macOS/Linux → ~/.claude/plugins/
+ */
+function getInstalledPluginsPath(): string {
+  const home = process.env.HOME ?? process.env.USERPROFILE ?? '';
+  return path.join(home, '.claude', 'plugins', 'installed_plugins.json');
+}
+
+/**
+ * 將 plugin 註冊到 Claude Code 的 installed_plugins.json
+ * 以 local scope 安裝，綁定特定 projectPath
+ * @returns 是否成功註冊（false = 已存在或寫入失敗）
+ */
+export function registerPlugin(repoRoot: string, pluginInstallPath: string): boolean {
+  const pluginsPath = getInstalledPluginsPath();
+  const pluginKey = 'projmem@local';
+  const absoluteInstallPath = path.resolve(pluginInstallPath);
+  const absoluteRepoRoot = path.resolve(repoRoot);
+
+  try {
+    let data: InstalledPluginsFile = { version: 2, plugins: {} };
+    if (fs.existsSync(pluginsPath)) {
+      data = JSON.parse(fs.readFileSync(pluginsPath, 'utf-8')) as InstalledPluginsFile;
+    }
+
+    const entries = data.plugins[pluginKey] ?? [];
+
+    // 檢查是否已有此 project 的 local 安裝
+    const existingIdx = entries.findIndex(
+      (e) => e.scope === 'local' && e.projectPath === absoluteRepoRoot,
+    );
+
+    const now = new Date().toISOString();
+    const newEntry: InstalledPluginEntry = {
+      scope: 'local',
+      projectPath: absoluteRepoRoot,
+      installPath: absoluteInstallPath,
+      version: '0.3.0',
+      installedAt: existingIdx >= 0 ? entries[existingIdx].installedAt : now,
+      lastUpdated: now,
+    };
+
+    if (existingIdx >= 0) {
+      // 更新既有項目
+      entries[existingIdx] = newEntry;
+    } else {
+      entries.push(newEntry);
+    }
+
+    data.plugins[pluginKey] = entries;
+    fs.mkdirSync(path.dirname(pluginsPath), { recursive: true });
+    fs.writeFileSync(pluginsPath, JSON.stringify(data, null, 2) + '\n', 'utf-8');
+    return existingIdx < 0; // 只有新增時回傳 true
+  } catch {
+    // 註冊失敗不中斷流程（hooks/settings.json 仍可作為 fallback）
+    return false;
+  }
+}
+
+/**
+ * 清理舊版 project-level skill 和 command 目錄
+ * 遷移到 plugin 結構後不再需要
+ */
+function cleanupLegacyDirs(repoRoot: string): void {
+  const legacySkillDir = path.join(repoRoot, '.claude', 'skills', 'projecthub');
+  const legacyPluginDir = path.join(repoRoot, '.claude', 'plugins', 'projecthub');
+  const legacyCommandFile = path.join(repoRoot, '.claude', 'commands', 'summarize.md');
+
+  if (fs.existsSync(legacySkillDir)) {
+    fs.rmSync(legacySkillDir, { recursive: true, force: true });
+  }
+  if (fs.existsSync(legacyPluginDir)) {
+    fs.rmSync(legacyPluginDir, { recursive: true, force: true });
+  }
+  if (fs.existsSync(legacyCommandFile)) {
+    fs.rmSync(legacyCommandFile, { force: true });
+    // 如果 commands 目錄為空，也一併清理
+    const commandsDir = path.join(repoRoot, '.claude', 'commands');
+    try {
+      const remaining = fs.readdirSync(commandsDir);
+      if (remaining.length === 0) {
+        fs.rmSync(commandsDir, { recursive: true, force: true });
+      }
+    } catch { /* 目錄不存在，無需處理 */ }
+  }
 }
 
 /** 註冊 init 指令 */
 export function registerInitCommand(program: Command): void {
   program
     .command('init')
-    .description('Initialize ProjectHub skill in the target project')
+    .description('Initialize projmem plugin in the target project')
     .option('--repo-root <path>', 'Target project root directory', '.')
-    .option('--force', 'Overwrite existing skill files', false)
+    .option('--force', 'Overwrite existing plugin files', false)
     .option('--skip-db', 'Skip database initialization', false)
     .option('--format <format>', 'Output format: json or text', 'text')
     .action(async (opts) => {
@@ -367,7 +498,7 @@ export function registerInitCommand(program: Command): void {
       const skipDb: boolean = opts.skipDb;
       const format: string = opts.format;
 
-      // 1. 複製 skill 檔案到 .claude/skills/projecthub/
+      // 1. 複製 plugin 檔案到 .claude/plugins/projmem/
       const assetsDir = getAssetsDir();
       if (!fs.existsSync(assetsDir)) {
         throw new Error(
@@ -375,21 +506,16 @@ export function registerInitCommand(program: Command): void {
         );
       }
 
-      const skillDest = path.join(repoRoot, '.claude', 'skills', 'projecthub');
-      const { copied, skipped } = copyDirRecursive(assetsDir, skillDest, force);
+      const pluginDest = path.join(repoRoot, '.claude', 'plugins', 'projmem');
+      const { copied, skipped } = copyDirRecursive(assetsDir, pluginDest, force);
 
-      // 1b. 複製 commands 到 .claude/commands/（slash commands）
-      const commandsAssetsDir = path.join(path.dirname(assetsDir), 'commands');
-      let commandsCopied = 0;
-      let commandsSkipped = 0;
-      if (fs.existsSync(commandsAssetsDir)) {
-        const commandsDest = path.join(repoRoot, '.claude', 'commands');
-        const cmdResult = copyDirRecursive(commandsAssetsDir, commandsDest, force);
-        commandsCopied = cmdResult.copied;
-        commandsSkipped = cmdResult.skipped;
-      }
+      // 1b. 清理舊版 skill/command 目錄（若存在）
+      cleanupLegacyDirs(repoRoot);
 
-      // 2. 合併 .claude/settings.json
+      // 1c. 將 plugin 註冊到 Claude Code installed_plugins.json
+      const pluginRegistered = registerPlugin(repoRoot, pluginDest);
+
+      // 2. 合併 .claude/settings.json（hooks 路徑遷移 + 去重）
       const settingsPath = path.join(repoRoot, '.claude', 'settings.json');
       let settingsMerged = false;
 
@@ -411,13 +537,13 @@ export function registerInitCommand(program: Command): void {
         settingsMerged = true;
       }
 
-      // 3. 建立 .projecthub.json
+      // 3. 建立 .projmem.json
       const configCreated = ensureProjectConfig(repoRoot);
 
       // 4. 建立 vault 目錄結構
       const vaultDirsCreated = ensureVaultDirs(repoRoot);
 
-      // 5. 確保 .mcp.json 包含 projecthub MCP server
+      // 5. 確保 .mcp.json 包含 projmem MCP server
       const mcpConfigured = ensureMcpConfig(repoRoot);
 
       // 6. 初始化資料庫
@@ -434,10 +560,9 @@ export function registerInitCommand(program: Command): void {
 
       const result: InitResult = {
         repoRoot,
-        skillFilesCopied: copied,
-        skillFilesSkipped: skipped,
-        commandFilesCopied: commandsCopied,
-        commandFilesSkipped: commandsSkipped,
+        pluginFilesCopied: copied,
+        pluginFilesSkipped: skipped,
+        pluginRegistered,
         settingsMerged,
         configCreated,
         mcpConfigured,

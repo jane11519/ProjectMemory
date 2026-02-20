@@ -9,7 +9,7 @@ date: 2026-02-20
 
 ## 架構層次與依賴規則
 
-ProjectHub 嚴格遵循 Clean Architecture 的依賴方向：
+projmem 嚴格遵循 Clean Architecture 的依賴方向：
 
 ```
 Domain ← Application ← Infrastructure ← Interface (MCP / CLI)

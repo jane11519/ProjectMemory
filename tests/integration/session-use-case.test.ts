@@ -11,7 +11,7 @@ import os from 'node:os';
 
 describe('SessionUseCase', () => {
   const dim = 4;
-  const tmpDir = path.join(os.tmpdir(), 'projecthub-session-' + Date.now());
+  const tmpDir = path.join(os.tmpdir(), 'projmem-session-' + Date.now());
   const vaultDir = path.join(tmpDir, 'vault');
   const sessionsDir = path.join(vaultDir, 'sessions');
   let dbMgr: DatabaseManager;
@@ -19,9 +19,9 @@ describe('SessionUseCase', () => {
   let useCase: SessionUseCase;
 
   beforeEach(() => {
-    fs.mkdirSync(path.join(vaultDir, '.projecthub'), { recursive: true });
+    fs.mkdirSync(path.join(vaultDir, '.projmem'), { recursive: true });
 
-    dbMgr = new DatabaseManager(path.join(vaultDir, '.projecthub', 'index.db'), dim);
+    dbMgr = new DatabaseManager(path.join(vaultDir, '.projmem', 'index.db'), dim);
     const vault = new FileSystemVaultAdapter();
     sessionAdapter = new VaultSessionAdapter(dbMgr.getDb(), vault);
     useCase = new SessionUseCase(sessionAdapter, sessionsDir, vaultDir);
@@ -370,12 +370,12 @@ describe('SessionUseCase', () => {
 
   /**
    * Scenario: getTranscript 從 vault 讀取 JSONL
-   * Given 一個 JSONL transcript 備份存在 vault/.projecthub/transcripts/
+   * Given 一個 JSONL transcript 備份存在 vault/.projmem/transcripts/
    * When 呼叫 getTranscript
    * Then 回傳 parsed TranscriptSummary
    */
   it('should read transcript from vault backup', () => {
-    const transcriptsDir = path.join(vaultDir, '.projecthub', 'transcripts');
+    const transcriptsDir = path.join(vaultDir, '.projmem', 'transcripts');
     fs.mkdirSync(transcriptsDir, { recursive: true });
 
     // 寫入模擬 JSONL

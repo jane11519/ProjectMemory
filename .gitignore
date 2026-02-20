@@ -3,10 +3,10 @@ dist/
 *.js.map
 *.d.ts
 !src/**/*.d.ts
-.projecthub/
-vault/.projecthub/index.db
-vault/.projecthub/dirty-files.txt
-vault/.projecthub/audit.log
+.projmem/
+vault/.projmem/index.db
+vault/.projmem/dirty-files.txt
+vault/.projmem/audit.log
 vault/.obsidian/workspace.json
 vault/.obsidian/workspace-mobile.json
 .env

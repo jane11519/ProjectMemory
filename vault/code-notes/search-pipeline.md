@@ -39,7 +39,7 @@ lexNorm = rawBM25 / max(allBM25)
 vecNorm = rawVec / max(allVec)
 finalScore = lexWeight × lexNorm + vecWeight × vecNorm
 ```
-預設權重：`lexical: 0.7, vector: 0.3`。BM25 權重較高，因為 ProjectHub 的文件含大量技術關鍵字，精確匹配更重要。
+預設權重：`lexical: 0.7, vector: 0.3`。BM25 權重較高，因為 projmem 的文件含大量技術關鍵字，精確匹配更重要。
 
 ### RRF 融合（hybrid 模式）
 
@@ -162,4 +162,4 @@ interface SearchResponse {
 - [領域模型與值物件](../code-notes/domain-model.md) — HybridScore、RRFScore、StrongSignal 詳細說明
 - [索引管線與增量更新](../code-notes/indexing-pipeline.md) — 搜尋的資料來源如何建立
 - [資料庫 Schema 完整說明](../structure/database-schema.md) — FTS5 與 vec0 表結構
-- [MCP 工具完整參考](../code-notes/mcp-tools.md) — projecthub_search、deep_search 工具參數
+- [MCP 工具完整參考](../code-notes/mcp-tools.md) — projmem_search、deep_search 工具參數

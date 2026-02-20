@@ -13,7 +13,7 @@ import os from 'node:os';
  * 子路徑自動繼承父路徑的 context。
  */
 describe('ContextUseCase', () => {
-  const tmpDir = path.join(os.tmpdir(), 'projecthub-ctx-' + Date.now());
+  const tmpDir = path.join(os.tmpdir(), 'projmem-ctx-' + Date.now());
   let dbMgr: DatabaseManager;
   let useCase: ContextUseCase;
 
@@ -113,15 +113,15 @@ describe('ContextUseCase', () => {
   });
 
   /**
-   * Scenario: projecthub:// protocol 路徑正規化
+   * Scenario: projmem:// protocol 路徑正規化
    * Given 帶 protocol prefix 的路徑
    * When addContext 和 checkContext
    * Then 自動移除 prefix 並正確運作
    */
-  it('should normalize projecthub:// protocol paths', () => {
-    useCase.addContext('projecthub://code-notes/auth', 'Auth context');
+  it('should normalize projmem:// protocol paths', () => {
+    useCase.addContext('projmem://code-notes/auth', 'Auth context');
 
-    const contexts = useCase.checkContext('projecthub://code-notes/auth');
+    const contexts = useCase.checkContext('projmem://code-notes/auth');
 
     expect(contexts).toHaveLength(1);
     expect(contexts[0].virtualPath).toBe('code-notes/auth');

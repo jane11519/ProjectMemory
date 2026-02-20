@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ProjectHub 一行安裝腳本
+# projmem 一行安裝腳本
 # 用法: curl -fsSL https://raw.githubusercontent.com/jane11519/ProjectMemory/main/install.sh | bash
 set -euo pipefail
 
@@ -29,7 +29,7 @@ NODE_VERSION=$(node -v | sed 's/^v//')
 NODE_MAJOR=$(echo "$NODE_VERSION" | cut -d. -f1)
 
 if [ "$NODE_MAJOR" -lt 18 ]; then
-  error "Node.js v${NODE_VERSION} detected. ProjectHub requires Node.js 18+."
+  error "Node.js v${NODE_VERSION} detected. projmem requires Node.js 18+."
   echo "  Please upgrade from https://nodejs.org/"
   exit 1
 fi
@@ -47,8 +47,8 @@ fi
 
 cd "$PROJECT_ROOT"
 
-# --- Step 3: 安裝 ProjectHub ---
-info "Installing ProjectHub from GitHub..."
+# --- Step 3: 安裝 projmem ---
+info "Installing projmem from GitHub..."
 
 if npm install github:jane11519/ProjectMemory; then
   success "npm install completed."
@@ -57,19 +57,19 @@ else
   exit 1
 fi
 
-# --- Step 4: 初始化 ProjectHub ---
-info "Initializing ProjectHub (skill files, hooks, vault, database)..."
+# --- Step 4: 初始化 projmem ---
+info "Initializing projmem (skill files, hooks, vault, database)..."
 
-if npx projecthub init; then
-  success "ProjectHub initialized successfully."
+if npx projmem init; then
+  success "projmem initialized successfully."
 else
-  error "projecthub init failed. You can retry manually: npx projecthub init"
+  error "projmem init failed. You can retry manually: npx projmem init"
   exit 1
 fi
 
 # --- 完成 ---
 echo ""
-printf "${BOLD}${GREEN}🎉 ProjectHub installed successfully!${NC}\n"
+printf "${BOLD}${GREEN}🎉 projmem installed successfully!${NC}\n"
 echo ""
 printf "${BOLD}Next steps:${NC}\n"
 echo "  1. Set your OpenAI API key (for vector embeddings):"
@@ -78,12 +78,12 @@ echo ""
 echo "  2. Add notes to vault/ directory (Markdown with YAML frontmatter)"
 echo ""
 echo "  3. Build the search index:"
-echo "     npx projecthub scan"
-echo "     npx projecthub index build"
+echo "     npx projmem scan"
+echo "     npx projmem index build"
 echo ""
 echo "  4. Search your knowledge base:"
-echo "     npx projecthub search \"your query\""
+echo "     npx projmem search \"your query\""
 echo ""
-echo "  5. In Claude Code, use /projecthub or trigger words like"
+echo "  5. In Claude Code, use /projmem or trigger words like"
 echo "     \"search\", \"project knowledge\", \"find in notes\""
 echo ""

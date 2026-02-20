@@ -9,7 +9,7 @@ date: 2026-02-20
 
 ## Port 設計原則
 
-ProjectHub 遵循 Hexagonal Architecture 的 Port-Adapter 模式：Domain 層定義 Port 介面，Infrastructure 層提供具體 Adapter 實作。Application 層的 Use Case 僅依賴 Port 介面，實現完全的依賴反轉。
+projmem 遵循 Hexagonal Architecture 的 Port-Adapter 模式：Domain 層定義 Port 介面，Infrastructure 層提供具體 Adapter 實作。Application 層的 Use Case 僅依賴 Port 介面，實現完全的依賴反轉。
 
 這套設計帶來三項核心優勢：
 1. **可測試性**：單元測試可注入 mock/stub，不需真實 DB 或 API
@@ -166,7 +166,7 @@ interface SessionPort {
 ```
 
 - `writeSessionMarkdown()`: 將 session 摘要匯出為 vault/sessions/ 下的 Markdown 檔案，檔名格式 `{date}_{sessionId}.md`
-- `listSessions()`: 支援 `hasSummary` 過濾，MCP tool `projecthub_session_list` 用此篩選未摘要的 session
+- `listSessions()`: 支援 `hasSummary` 過濾，MCP tool `projmem_session_list` 用此篩選未摘要的 session
 
 ## 相關文件
 

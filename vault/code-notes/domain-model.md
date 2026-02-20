@@ -9,7 +9,7 @@ date: 2026-02-20
 
 ## 設計哲學 Design Philosophy
 
-ProjectHub 的 Domain 層遵循 DDD（Domain-Driven Design）原則，將核心業務概念建模為 Entity 與 Value Object。所有外部依賴透過 Port 介面隔離，Domain 層完全無外部套件依賴（僅用 Node.js 內建 `crypto`）。
+projmem 的 Domain 層遵循 DDD（Domain-Driven Design）原則，將核心業務概念建模為 Entity 與 Value Object。所有外部依賴透過 Port 介面隔離，Domain 層完全無外部套件依賴（僅用 Node.js 內建 `crypto`）。
 
 Entity 以 interface 定義（而非 class），因為它們主要是資料載體，行為由 Use Case 層編排。Value Object 則使用 class 實作，封裝不可變的領域邏輯（例如分數融合演算法）。
 
@@ -163,7 +163,7 @@ Reciprocal Rank Fusion（RRF）分數融合，使用排名而非原始分數，�
 
 ## Value Object: SessionSummary
 
-結構化的 session 摘要，由 Claude（MCP client）讀取 transcript 後生成，透過 `projecthub_session_update_summary` MCP tool 寫回。
+結構化的 session 摘要，由 Claude（MCP client）讀取 transcript 後生成，透過 `projmem_session_update_summary` MCP tool 寫回。
 
 ```typescript
 interface SessionSummary {

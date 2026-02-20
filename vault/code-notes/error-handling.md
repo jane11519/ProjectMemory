@@ -9,13 +9,13 @@ date: 2026-02-20
 
 ## 設計原則 Design Principles
 
-ProjectHub 的錯誤處理遵循「優雅降級」（Graceful Degradation）原則：當部分子系統不可用時，系統應回退到功能較少但仍可用的狀態，而非直接失敗。這對 MCP Server 尤為重要——AI 助手依賴搜尋結果，部分結果優於無結果。
+projmem 的錯誤處理遵循「優雅降級」（Graceful Degradation）原則：當部分子系統不可用時，系統應回退到功能較少但仍可用的狀態，而非直接失敗。這對 MCP Server 尤為重要——AI 助手依賴搜尋結果，部分結果優於無結果。
 
 核心降級路徑：
 1. **完整功能**：BM25 + Vector + LLM（deep search 八階段管線）
 2. **無 LLM**：BM25 + Vector（RRF 融合，跳過 expansion 和 reranking）
 3. **無 Vector**：BM25-only（純全文搜尋）
-4. **最低限度**：直接取 chunk（`projecthub_get` / `projecthub_multi_get`）
+4. **最低限度**：直接取 chunk（`projmem_get` / `projmem_multi_get`）
 
 ## Null Object Pattern — NullLLMAdapter
 

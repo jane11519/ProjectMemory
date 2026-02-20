@@ -46,7 +46,7 @@ function createMockEmbedding(): EmbeddingPort {
 }
 
 describe('SearchUseCase', () => {
-  const tmpDir = path.join(os.tmpdir(), 'projecthub-search-' + Date.now());
+  const tmpDir = path.join(os.tmpdir(), 'projmem-search-' + Date.now());
   const vaultDir = path.join(tmpDir, 'vault', 'code-notes');
   let dbMgr: DatabaseManager;
   let fts5: FTS5Adapter;
@@ -56,9 +56,9 @@ describe('SearchUseCase', () => {
 
   beforeEach(async () => {
     fs.mkdirSync(vaultDir, { recursive: true });
-    fs.mkdirSync(path.join(tmpDir, 'vault', '.projecthub'), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, 'vault', '.projmem'), { recursive: true });
 
-    dbMgr = new DatabaseManager(path.join(tmpDir, 'vault', '.projecthub', 'index.db'), dim);
+    dbMgr = new DatabaseManager(path.join(tmpDir, 'vault', '.projmem', 'index.db'), dim);
     fts5 = new FTS5Adapter(dbMgr.getDb());
     vec = new SqliteVecAdapter(dbMgr.getDb());
     mockEmbed = createMockEmbedding();

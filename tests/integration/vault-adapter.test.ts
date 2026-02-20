@@ -6,7 +6,7 @@ import os from 'node:os';
 
 describe('FileSystemVaultAdapter', () => {
   let adapter: FileSystemVaultAdapter;
-  const tmpDir = path.join(os.tmpdir(), 'projecthub-vault-' + Date.now());
+  const tmpDir = path.join(os.tmpdir(), 'projmem-vault-' + Date.now());
 
   beforeEach(() => {
     fs.mkdirSync(path.join(tmpDir, 'vault', 'code-notes'), { recursive: true });

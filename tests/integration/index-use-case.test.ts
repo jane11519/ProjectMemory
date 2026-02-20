@@ -45,7 +45,7 @@ function createFailingEmbedding(): EmbeddingPort {
 
 describe('IndexUseCase', () => {
   const dim = 4;
-  const tmpDir = path.join(os.tmpdir(), 'projecthub-index-' + Date.now());
+  const tmpDir = path.join(os.tmpdir(), 'projmem-index-' + Date.now());
   const vaultDir = path.join(tmpDir, 'vault', 'code-notes');
   let dbMgr: DatabaseManager;
   let fts5: FTS5Adapter;
@@ -54,9 +54,9 @@ describe('IndexUseCase', () => {
 
   beforeEach(() => {
     fs.mkdirSync(vaultDir, { recursive: true });
-    fs.mkdirSync(path.join(tmpDir, 'vault', '.projecthub'), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, 'vault', '.projmem'), { recursive: true });
 
-    dbMgr = new DatabaseManager(path.join(tmpDir, 'vault', '.projecthub', 'index.db'), dim);
+    dbMgr = new DatabaseManager(path.join(tmpDir, 'vault', '.projmem', 'index.db'), dim);
     fts5 = new FTS5Adapter(dbMgr.getDb());
     vec = new SqliteVecAdapter(dbMgr.getDb());
 
@@ -126,7 +126,7 @@ Avatar upload and settings.`);
     fs.writeFileSync(path.join(vaultDir, 'auth.md'), '# Auth\nUpdated content with changes.');
 
     // 增量索引只處理 dirty files
-    const dirtyPath = path.join(tmpDir, 'vault', '.projecthub', 'dirty-files.txt');
+    const dirtyPath = path.join(tmpDir, 'vault', '.projmem', 'dirty-files.txt');
     fs.writeFileSync(dirtyPath, path.join(vaultDir, 'auth.md') + '\n');
 
     const stats = await useCase.buildIncremental(tmpDir, 'vault', dirtyPath);

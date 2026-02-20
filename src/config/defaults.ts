@@ -1,15 +1,15 @@
-import type { ProjectHubConfig } from './types.js';
+import type { ProjMemConfig } from './types.js';
 
-export const DEFAULT_CONFIG: ProjectHubConfig = {
+export const DEFAULT_CONFIG: ProjMemConfig = {
   version: 1,
   vault: {
     root: 'vault',
     folders: ['code-notes', 'rules', 'integrations', 'sessions', 'structure'],
   },
   index: {
-    dbPath: 'vault/.projecthub/index.db',
-    dirtyFilePath: 'vault/.projecthub/dirty-files.txt',
-    auditLogPath: 'vault/.projecthub/audit.log',
+    dbPath: 'vault/.projmem/index.db',
+    dirtyFilePath: 'vault/.projmem/dirty-files.txt',
+    auditLogPath: 'vault/.projmem/audit.log',
   },
   embedding: {
     provider: 'openai',

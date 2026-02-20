@@ -1,5 +1,5 @@
 {
-  "name": "projecthub",
+  "name": "projmem",
   "version": "0.3.0",
   "description": "Project-level Obsidian knowledge base with hybrid search for Claude Code",
   "type": "module",
@@ -23,7 +23,7 @@
     "node": ">=18.0.0"
   },
   "bin": {
-    "projecthub": "./dist/cli/index.js"
+    "projmem": "./dist/cli/index.js"
   },
   "files": [
     "dist/",

@@ -4,13 +4,13 @@ import { SearchUseCase } from '../../application/SearchUseCase.js';
 import type { McpDependencies } from '../McpServer.js';
 
 /**
- * MCP Tool: projecthub_vector_search
- * 對應 CLI: projecthub search --mode vec_only
+ * MCP Tool: projmem_vector_search
+ * 對應 CLI: projmem search --mode vec_only
  * 語意向量搜尋，適合概念性和語意相似的查詢。
  */
 export function registerVectorSearchTool(server: McpServer, deps: McpDependencies): void {
   server.tool(
-    'projecthub_vector_search',
+    'projmem_vector_search',
     'Semantic vector search for conceptual/meaning-based queries',
     {
       query: z.string().describe('Search query (semantic meaning is used)'),

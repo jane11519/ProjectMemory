@@ -93,7 +93,7 @@ export class DatabaseManager {
     if (storedDimension !== this.embeddingDimension) {
       throw new Error(
         `Embedding dimension mismatch: database has ${storedDimension}, config specifies ${this.embeddingDimension}. ` +
-        `Run "projecthub reindex --force" to rebuild the vector index with the new dimension.`
+        `Run "projmem reindex --force" to rebuild the vector index with the new dimension.`
       );
     }
   }

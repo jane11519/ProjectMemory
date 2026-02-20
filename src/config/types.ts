@@ -94,7 +94,7 @@ export interface SessionConfig {
 }
 
 /** 完整設定 */
-export interface ProjectHubConfig {
+export interface ProjMemConfig {
   version: number;
   vault: VaultConfig;
   index: IndexPathConfig;
@@ -108,5 +108,5 @@ export interface ProjectHubConfig {
 
 /** 部分設定（用於 merge） */
 export type PartialConfig = {
-  [K in keyof ProjectHubConfig]?: Partial<ProjectHubConfig[K]>;
+  [K in keyof ProjMemConfig]?: Partial<ProjMemConfig[K]>;
 };

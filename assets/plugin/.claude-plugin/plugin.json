@@ -1,0 +1,11 @@
+{
+  "name": "projmem",
+  "description": "Project knowledge base with hybrid BM25+vector search",
+  "version": "0.3.0",
+  "author": {
+    "name": "projmem"
+  },
+  "homepage": "https://github.com/jane11519/ProjectMemory",
+  "license": "MIT",
+  "keywords": ["knowledge-base", "search", "session", "vault", "mcp"]
+}

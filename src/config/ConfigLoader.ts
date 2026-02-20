@@ -1,9 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { DEFAULT_CONFIG } from './defaults.js';
-import type { ProjectHubConfig, PartialConfig } from './types.js';
+import type { ProjMemConfig, PartialConfig } from './types.js';
 
-export type { ProjectHubConfig } from './types.js';
+export type { ProjMemConfig } from './types.js';
 
 /** 深層合併：partial 覆蓋 base */
 function deepMerge<T extends Record<string, any>>(base: T, partial: Partial<T>): T {
@@ -20,7 +20,7 @@ function deepMerge<T extends Record<string, any>>(base: T, partial: Partial<T>):
 }
 
 /** 環境變數覆蓋 config：OPENAI_BASE_URL → embedding.baseUrl & llm.baseUrl */
-function applyEnvOverrides(config: ProjectHubConfig): void {
+function applyEnvOverrides(config: ProjMemConfig): void {
   const baseUrl = process.env.OPENAI_BASE_URL;
   if (baseUrl) {
     config.embedding.baseUrl = baseUrl;
@@ -29,7 +29,7 @@ function applyEnvOverrides(config: ProjectHubConfig): void {
 }
 
 /** 驗證設定值的合法性 */
-function validate(config: ProjectHubConfig): void {
+function validate(config: ProjMemConfig): void {
   if (!Number.isInteger(config.embedding.dimension) || config.embedding.dimension <= 0) {
     throw new Error('dimension must be a positive integer');
   }
@@ -41,26 +41,26 @@ function validate(config: ProjectHubConfig): void {
 }
 
 /**
- * 載入設定：讀取 .projecthub.json（若存在）並合併到預設值上
+ * 載入設定：讀取 .projmem.json（若存在）並合併到預設值上
  * @param repoRoot - repo 根目錄
  * @param overrides - 程式碼層級的覆蓋值（優先於檔案）
  */
 export function loadConfig(
   repoRoot: string,
   overrides?: PartialConfig
-): ProjectHubConfig {
+): ProjMemConfig {
   let fileConfig: PartialConfig = {};
 
-  const configPath = path.join(repoRoot, '.projecthub.json');
+  const configPath = path.join(repoRoot, '.projmem.json');
   if (fs.existsSync(configPath)) {
     const raw = fs.readFileSync(configPath, 'utf-8');
     fileConfig = JSON.parse(raw) as PartialConfig;
   }
 
   // 合併順序：defaults < file config < overrides
-  let merged = deepMerge(DEFAULT_CONFIG, fileConfig as Partial<ProjectHubConfig>);
+  let merged = deepMerge(DEFAULT_CONFIG, fileConfig as Partial<ProjMemConfig>);
   if (overrides) {
-    merged = deepMerge(merged, overrides as Partial<ProjectHubConfig>);
+    merged = deepMerge(merged, overrides as Partial<ProjMemConfig>);
   }
 
   // 環境變數覆蓋（.mcp.json env 或系統環境變數）優先於檔案設定

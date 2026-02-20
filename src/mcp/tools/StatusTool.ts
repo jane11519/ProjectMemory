@@ -2,13 +2,13 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { McpDependencies } from '../McpServer.js';
 
 /**
- * MCP Tool: projecthub_status
- * 對應 CLI: projecthub health
+ * MCP Tool: projmem_status
+ * 對應 CLI: projmem health
  * 索引狀態、文件統計與 collection 資訊。
  */
 export function registerStatusTool(server: McpServer, deps: McpDependencies): void {
   server.tool(
-    'projecthub_status',
+    'projmem_status',
     'Show index statistics, collection info, and health status',
     {},
     async () => {
@@ -43,7 +43,7 @@ export function registerStatusTool(server: McpServer, deps: McpDependencies): vo
       }
 
       const lines: string[] = [
-        '# ProjectHub Index Status',
+        '# projmem Index Status',
         '',
         `Documents: ${docCount}`,
         `Chunks: ${chunkCount}`,

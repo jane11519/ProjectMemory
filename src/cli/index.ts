@@ -13,7 +13,7 @@ import { registerContextCommand } from './commands/context.js';
 const program = new Command();
 
 program
-  .name('projecthub')
+  .name('projmem')
   .description('Project-level Obsidian knowledge base with hybrid BM25+vector search')
   .version('0.2.0');
 

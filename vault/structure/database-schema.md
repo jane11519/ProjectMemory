@@ -9,7 +9,7 @@ date: 2026-02-20
 
 ## PRAGMA 設定
 
-ProjectHub 使用 SQLite 搭配 WAL（Write-Ahead Logging）模式，確保讀寫並行效能。資料庫初始化時套用以下 PRAGMA：
+projmem 使用 SQLite 搭配 WAL（Write-Ahead Logging）模式，確保讀寫並行效能。資料庫初始化時套用以下 PRAGMA：
 
 | PRAGMA | 值 | 說明 |
 |--------|----|------|

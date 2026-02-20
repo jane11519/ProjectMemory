@@ -9,7 +9,7 @@ date: 2026-02-20
 
 ## 設計目的 Purpose
 
-Session 系統追蹤 Claude Code 的對話歷程，並透過 MCP 工具實現「零成本摘要」——利用 Claude 本身（而非外部 LLM API）讀取 transcript 後生成結構化摘要，寫回 ProjectHub 資料庫。
+Session 系統追蹤 Claude Code 的對話歷程，並透過 MCP 工具實現「零成本摘要」——利用 Claude 本身（而非外部 LLM API）讀取 transcript 後生成結構化摘要，寫回 projmem 資料庫。
 
 這使得過去對話的設計決策、實作成果、待辦事項可被搜尋，實現跨 session 的知識累積。
 
@@ -51,20 +51,20 @@ capture（擷取 transcript）→ active（進行中）
 
 ### Step 1: 列出待摘要 Session
 ```
-MCP: projecthub_session_list(hasSummary: false)
+MCP: projmem_session_list(hasSummary: false)
 → 回傳沒有 summary 的 session 列表
 ```
 
 ### Step 2: 讀取 Transcript
 ```
-MCP: projecthub_session_transcript(sessionId?)
+MCP: projmem_session_transcript(sessionId?)
 → 回傳格式化的對話記錄（含 role、timestamp、tools、text）
 → 若省略 sessionId，自動選取最近的 session
 ```
 
 ### Step 3: 寫入結構化摘要
 ```
-MCP: projecthub_session_update_summary(
+MCP: projmem_session_update_summary(
   sessionId, overview, decisions, outcomes, openItems, tags
 )
 → 寫入 sessions.summary_json

@@ -5,7 +5,7 @@ import path from 'node:path';
 import os from 'node:os';
 
 describe('DatabaseManager', () => {
-  const tmpDir = path.join(os.tmpdir(), 'projecthub-test-' + Date.now());
+  const tmpDir = path.join(os.tmpdir(), 'projmem-test-' + Date.now());
   const dbPath = path.join(tmpDir, 'test.db');
 
   afterEach(() => {

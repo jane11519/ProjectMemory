@@ -49,10 +49,10 @@ function createMockEmbedding(): EmbeddingPort {
  * Feature: MCP Server 整合
  *
  * 作為 LLM client（如 Claude Code），我需要透過 MCP 工具
- * 搜尋和檢索 ProjectHub 知識庫的內容。
+ * 搜尋和檢索 projmem 知識庫的內容。
  */
 describe('MCP Server', () => {
-  const tmpDir = path.join(os.tmpdir(), 'projecthub-mcp-' + Date.now());
+  const tmpDir = path.join(os.tmpdir(), 'projmem-mcp-' + Date.now());
   const vaultDir = path.join(tmpDir, 'vault', 'code-notes');
   const vaultRoot = path.join(tmpDir, 'vault');
   let dbMgr: DatabaseManager;
@@ -60,9 +60,9 @@ describe('MCP Server', () => {
 
   beforeEach(async () => {
     fs.mkdirSync(vaultDir, { recursive: true });
-    fs.mkdirSync(path.join(tmpDir, 'vault', '.projecthub'), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, 'vault', '.projmem'), { recursive: true });
 
-    dbMgr = new DatabaseManager(path.join(tmpDir, 'vault', '.projecthub', 'index.db'), dim);
+    dbMgr = new DatabaseManager(path.join(tmpDir, 'vault', '.projmem', 'index.db'), dim);
     mockEmbed = createMockEmbedding();
 
     // 插入 root namespace
@@ -128,15 +128,15 @@ API gateway routing and rate limiting configuration.`);
   it('should build instructions with tool descriptions', () => {
     const instructions = buildInstructions(tmpDir);
 
-    expect(instructions).toContain('projecthub_search');
-    expect(instructions).toContain('projecthub_vector_search');
-    expect(instructions).toContain('projecthub_deep_search');
-    expect(instructions).toContain('projecthub_get');
-    expect(instructions).toContain('projecthub_multi_get');
-    expect(instructions).toContain('projecthub_status');
-    expect(instructions).toContain('projecthub_session_list');
-    expect(instructions).toContain('projecthub_session_transcript');
-    expect(instructions).toContain('projecthub_session_update_summary');
+    expect(instructions).toContain('projmem_search');
+    expect(instructions).toContain('projmem_vector_search');
+    expect(instructions).toContain('projmem_deep_search');
+    expect(instructions).toContain('projmem_get');
+    expect(instructions).toContain('projmem_multi_get');
+    expect(instructions).toContain('projmem_status');
+    expect(instructions).toContain('projmem_session_list');
+    expect(instructions).toContain('projmem_session_transcript');
+    expect(instructions).toContain('projmem_session_update_summary');
     expect(instructions).toContain('Recommended workflow');
     expect(instructions).toContain('Session summarize workflow');
     expect(instructions).toContain(tmpDir);

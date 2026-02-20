@@ -10,10 +10,10 @@ import type { OutputFormat } from '../formatters/ProgressiveDisclosureFormatter.
  * 註冊 context 指令群組
  *
  * 用法：
- *   projecthub context add <path> <description>
- *   projecthub context list
- *   projecthub context check <path>
- *   projecthub context rm <path>
+ *   projmem context add <path> <description>
+ *   projmem context list
+ *   projmem context check <path>
+ *   projmem context rm <path>
  */
 export function registerContextCommand(program: Command): void {
   const contextCmd = program

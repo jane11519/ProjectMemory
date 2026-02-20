@@ -3,13 +3,13 @@ import { z } from 'zod';
 import type { McpDependencies } from '../McpServer.js';
 
 /**
- * MCP Tool: projecthub_get
- * 對應 CLI: projecthub search expand <id> 或 search full <docPath>
+ * MCP Tool: projmem_get
+ * 對應 CLI: projmem search expand <id> 或 search full <docPath>
  * 以 chunkId 或 docPath 取回完整文件內容。
  */
 export function registerGetTool(server: McpServer, deps: McpDependencies): void {
   server.tool(
-    'projecthub_get',
+    'projmem_get',
     'Retrieve a specific chunk by ID (e.g. "#123") or all chunks of a document by path',
     {
       identifier: z.string().describe('Chunk ID (e.g. "#123" or "123") or document path'),

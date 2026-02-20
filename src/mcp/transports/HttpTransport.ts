@@ -47,7 +47,7 @@ export async function startHttpTransport(
       await sseTransport.handlePostMessage(req, res);
     } else if (url.pathname === '/health' && req.method === 'GET') {
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ status: 'ok', name: 'projecthub-mcp' }));
+      res.end(JSON.stringify({ status: 'ok', name: 'projmem-mcp' }));
     } else {
       res.writeHead(404);
       res.end('Not found');

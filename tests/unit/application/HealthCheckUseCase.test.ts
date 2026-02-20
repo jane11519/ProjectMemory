@@ -8,7 +8,7 @@ import os from 'node:os';
 
 describe('HealthCheckUseCase', () => {
   const dim = 4;
-  const tmpDir = path.join(os.tmpdir(), 'projecthub-health-' + Date.now());
+  const tmpDir = path.join(os.tmpdir(), 'projmem-health-' + Date.now());
   let dbMgr: DatabaseManager;
   let fts5: FTS5Adapter;
   let useCase: HealthCheckUseCase;

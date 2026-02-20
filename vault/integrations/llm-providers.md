@@ -9,15 +9,15 @@ date: 2026-02-20
 
 ## 概覽 Overview
 
-ProjectHub 使用兩種外部 AI 服務：
+projmem 使用兩種外部 AI 服務：
 1. **Embedding**：將文字轉換為向量，用於語意搜尋（必要）
 2. **LLM**：Query Expansion 和 Re-ranking，用於 deep search（可選）
 
-兩者均透過 `.projecthub.json` 設定，API key 則透過 `.mcp.json` 的 env 欄位或系統環境變數提供。
+兩者均透過 `.projmem.json` 設定，API key 則透過 `.mcp.json` 的 env 欄位或系統環境變數提供。
 
 ## Embedding 設定
 
-`.projecthub.json` 中的 `embedding` 區塊：
+`.projmem.json` 中的 `embedding` 區塊：
 
 ```json
 {
@@ -54,11 +54,11 @@ Error: Embedding dimension mismatch: stored=1536, configured=768.
 Please rebuild the index.
 ```
 
-解決方式：刪除 `vault/.projecthub/index.db` 後重新執行 `index build`。
+解決方式：刪除 `vault/.projmem/index.db` 後重新執行 `index build`。
 
 ## LLM 設定
 
-`.projecthub.json` 中的 `llm` 區塊：
+`.projmem.json` 中的 `llm` 區塊：
 
 ```json
 {
@@ -123,16 +123,16 @@ Please rebuild the index.
 
 ## API Key 設定
 
-API key 透過環境變數提供，不寫入 `.projecthub.json`（安全考量）。
+API key 透過環境變數提供，不寫入 `.projmem.json`（安全考量）。
 
 ### 透過 .mcp.json env
 
 ```json
 {
   "mcpServers": {
-    "projecthub": {
+    "projmem": {
       "command": "npx",
-      "args": ["-y", "projecthub", "mcp"],
+      "args": ["-y", "projmem", "mcp"],
       "env": {
         "OPENAI_API_KEY": "${OPENAI_API_KEY}",
         "OPENAI_BASE_URL": "${OPENAI_BASE_URL}"

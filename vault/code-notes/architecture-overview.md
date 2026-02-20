@@ -1,21 +1,21 @@
 ---
-title: "ProjectHub 架構總覽"
+title: "projmem 架構總覽"
 tags: [architecture, clean-architecture, hexagonal, dependency-inversion, MCP, CLI, domain, application, infrastructure]
 source_kind: code_note
 date: 2026-02-20
 ---
 
-# ProjectHub 架構總覽
+# projmem 架構總覽
 
 ## 系統定位 System Purpose
 
-ProjectHub 是一個專案知識管理系統，以 CLI + MCP Server 雙介面提供服務。它將 Markdown 文件索引至 SQLite 資料庫（FTS5 全文搜尋 + sqlite-vec 向量搜尋），並透過多階段搜尋管線提供精準的知識檢索。
+projmem 是一個專案知識管理系統，以 CLI + MCP Server 雙介面提供服務。它將 Markdown 文件索引至 SQLite 資料庫（FTS5 全文搜尋 + sqlite-vec 向量搜尋），並透過多階段搜尋管線提供精準的知識檢索。
 
 核心價值主張：讓 AI 助手（如 Claude Code）能夠透過 MCP 工具搜尋專案的架構筆記、設計決策、編碼慣例，實現「AI 可查詢的專案知識庫」。
 
 ## 架構分層 Layered Architecture
 
-ProjectHub 採用 Clean Architecture（亦稱 Hexagonal Architecture / Ports & Adapters），依賴方向嚴格由外向內：
+projmem 採用 Clean Architecture（亦稱 Hexagonal Architecture / Ports & Adapters），依賴方向嚴格由外向內：
 
 ```
 ┌──────────────────────────────────────────────┐
@@ -33,7 +33,7 @@ ProjectHub 採用 Clean Architecture（亦稱 Hexagonal Architecture / Ports & A
 
 ## 雙介面設計 Dual Interface
 
-ProjectHub 提供兩個平行的外部介面，共用相同的 Application 層與 Infrastructure 層：
+projmem 提供兩個平行的外部介面，共用相同的 Application 層與 Infrastructure 層：
 
 ### MCP Server（AI 工具呼叫）
 - 9 個 MCP tools：搜尋（3）、取得（2）、狀態（1）、Session（3）
@@ -78,7 +78,7 @@ Claude Code JSONL → TranscriptParser（解析對話）
 
 ## 依賴注入策略 Dependency Injection
 
-ProjectHub 不使用 DI container，而是在組合根（Composition Root）手動建立依賴圖。組合根位於：
+projmem 不使用 DI container，而是在組合根（Composition Root）手動建立依賴圖。組合根位於：
 - **CLI**: 各 `src/cli/commands/*.ts` 的指令 handler 函式
 - **MCP**: `src/cli/commands/mcp.ts` 中的 `mcp` 指令 handler
 
@@ -95,7 +95,7 @@ IndexUseCase(db, fts5, vec, mdParser, chunker, vaultPort, embeddingPort)
 ## 設定管理 Configuration
 
 設定來源與優先級：
-1. `.projecthub.json`（專案根目錄，最高優先）
+1. `.projmem.json`（專案根目錄，最高優先）
 2. `DEFAULT_CONFIG`（`src/config/defaults.ts`，兜底預設值）
 
 設定透過 `PartialConfig` 型別進行深層合併。關鍵設定區塊：

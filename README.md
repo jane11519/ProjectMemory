@@ -1,4 +1,4 @@
-# ProjectHub
+# projmem
 
 **專案級 Obsidian 知識庫，搭載多階段搜尋管線（RRF + Query Expansion + LLM Re-ranking）、MCP Server、以及階層式 Context 系統，為 Claude Code 打造的專案技能（Project Skill）。**
 
@@ -28,7 +28,7 @@
 
 ## 架構概覽
 
-ProjectHub 採用 **Clean Architecture / Hexagonal Architecture**，從內到外分為五層：
+projmem 採用 **Clean Architecture / Hexagonal Architecture**，從內到外分為五層：
 
 ```
 ┌─────────────────────────────────────────────────┐
@@ -87,17 +87,17 @@ Query
 ```bash
 # 1. 在 Claude Code 中安裝 plugin（自動設定 MCP Server + Skills）
 /plugin marketplace add jane11519/ProjectMemory
-/plugin install projecthub@ProjectMemory
+/plugin install projmem@ProjectMemory
 
 # 2. 初始化 vault 目錄結構與資料庫
-npx projecthub init
+npx projmem init
 ```
 
 #### 方式 B：手動安裝
 
 ```bash
 # 1. 初始化（自動建立 vault、DB、hooks、.mcp.json）
-npx projecthub init
+npx projmem init
 
 # MCP server 已自動設定到 .mcp.json
 # 重啟 Claude Code 即可使用
@@ -106,14 +106,14 @@ npx projecthub init
 #### 方式 C：全域安裝 + MCP 手動註冊
 
 ```bash
-npm install -g projecthub
-npx projecthub init
-claude mcp add --transport stdio projecthub -- projecthub mcp
+npm install -g projmem
+npx projmem init
+claude mcp add --transport stdio projmem -- projmem mcp
 ```
 
 > **Windows 注意事項**：若 `npx` 直接執行 MCP server 出現問題，可改用 `cmd /c npx` wrapper：
 > ```json
-> { "command": "cmd", "args": ["/c", "npx", "-y", "projecthub", "mcp"] }
+> { "command": "cmd", "args": ["/c", "npx", "-y", "projmem", "mcp"] }
 > ```
 
 ### 典型工作流程
@@ -125,16 +125,16 @@ export OPENAI_API_KEY="sk-..."
 # 2. 在 vault/code-notes/ 新增 Markdown 筆記
 
 # 3. 建立搜尋索引
-npx projecthub index build
+npx projmem index build
 
 # 4. 搜尋知識庫
-npx projecthub search "authentication flow" --format json
+npx projmem search "authentication flow" --format json
 
 # 5. Deep Search（完整管線）
-npx projecthub search "auth architecture" --mode deep --format json
+npx projmem search "auth architecture" --mode deep --format json
 
 # 6. 啟動 MCP Server
-npx projecthub mcp
+npx projmem mcp
 ```
 
 ---
@@ -147,24 +147,24 @@ npx projecthub mcp
 
 ```bash
 # 混合搜尋（預設 RRF 融合）
-npx projecthub search "JWT token" --format json
+npx projmem search "JWT token" --format json
 
 # Deep Search（Query Expansion + RRF + Re-ranking）
-npx projecthub search "authentication" --mode deep --format json
+npx projmem search "authentication" --mode deep --format json
 
 # 跳過 expansion 或 re-ranking
-npx projecthub search "auth" --mode deep --skip-expansion
-npx projecthub search "auth" --mode deep --skip-reranking
+npx projmem search "auth" --mode deep --skip-expansion
+npx projmem search "auth" --mode deep --skip-reranking
 
 # 指定搜尋模式
-npx projecthub search "error" --mode bm25_only   # 僅 BM25
-npx projecthub search "error" --mode vec_only    # 僅向量
+npx projmem search "error" --mode bm25_only   # 僅 BM25
+npx projmem search "error" --mode vec_only    # 僅向量
 
 # 展開單一 chunk
-npx projecthub search expand 42 --format json
+npx projmem search expand 42 --format json
 
 # 整份文件
-npx projecthub search full "code-notes/auth.md" --format json
+npx projmem search full "code-notes/auth.md" --format json
 ```
 
 | 選項 | 說明 | 預設值 |
@@ -179,17 +179,17 @@ npx projecthub search full "code-notes/auth.md" --format json
 ### 索引
 
 ```bash
-npx projecthub index build     # 全量重建
-npx projecthub index update    # 增量更新（dirty files）
+npx projmem index build     # 全量重建
+npx projmem index update    # 增量更新（dirty files）
 ```
 
 ### Session
 
 ```bash
-npx projecthub session save --session-id "session-abc"
-npx projecthub session compact --session-id "session-abc"
-npx projecthub session list
-npx projecthub session capture    # 擷取 Claude Code transcript
+npx projmem session save --session-id "session-abc"
+npx projmem session compact --session-id "session-abc"
+npx projmem session list
+npx projmem session capture    # 擷取 Claude Code transcript
 # /session-summarize              # Claude Code Skill：生成結構化摘要
 ```
 
@@ -197,67 +197,67 @@ npx projecthub session capture    # 擷取 Claude Code transcript
 
 ```bash
 # 新增 context metadata
-npx projecthub context add "code-notes/services/auth" "Authentication: JWT, OAuth2, RBAC"
+npx projmem context add "code-notes/services/auth" "Authentication: JWT, OAuth2, RBAC"
 
 # 列出所有 contexts
-npx projecthub context list
+npx projmem context list
 
 # 檢查路徑的 applicable contexts（含階層繼承）
-npx projecthub context check "code-notes/services/auth/jwt.md"
+npx projmem context check "code-notes/services/auth/jwt.md"
 
 # 移除 context
-npx projecthub context rm "code-notes/services/auth"
+npx projmem context rm "code-notes/services/auth"
 ```
 
 ### MCP Server
 
 ```bash
 # stdio 模式（Claude Code 預設）
-npx projecthub mcp
+npx projmem mcp
 
 # HTTP/SSE 模式（daemon）
-npx projecthub mcp --http --port 8181
+npx projmem mcp --http --port 8181
 ```
 
 ### 其他
 
 ```bash
-npx projecthub scan             # 偵測命名空間與文件
-npx projecthub health           # 檢查索引一致性
-npx projecthub health --fix     # 自動修復
-npx projecthub init             # 初始化專案
+npx projmem scan             # 偵測命名空間與文件
+npx projmem health           # 檢查索引一致性
+npx projmem health --fix     # 自動修復
+npx projmem init             # 初始化專案
 ```
 
 ---
 
 ## MCP Server
 
-ProjectHub 可作為 MCP server 運行，提供 9 個工具供 LLM client 使用。
+projmem 可作為 MCP server 運行，提供 9 個工具供 LLM client 使用。
 
 ### MCP 工具
 
 | MCP Tool | 對應 CLI | 適用場景 |
 |----------|----------|----------|
-| `projecthub_search` | `search --mode bm25_only` | 已知關鍵字、精確術語 |
-| `projecthub_vector_search` | `search --mode vec_only` | 語意查詢、概念搜尋 |
-| `projecthub_deep_search` | `search --mode deep` | 複雜研究、多面向查詢 |
-| `projecthub_get` | `search expand <id>` | 取回特定 chunk 或文件 |
-| `projecthub_multi_get` | — | 批量取回多個項目 |
-| `projecthub_status` | `health` | 索引統計與健康狀態 |
-| `projecthub_session_list` | `session list` | 列出 sessions（含 summary 狀態過濾） |
-| `projecthub_session_transcript` | — | 讀取完整對話 transcript |
-| `projecthub_session_update_summary` | — | 儲存 Claude 生成的結構化摘要 |
+| `projmem_search` | `search --mode bm25_only` | 已知關鍵字、精確術語 |
+| `projmem_vector_search` | `search --mode vec_only` | 語意查詢、概念搜尋 |
+| `projmem_deep_search` | `search --mode deep` | 複雜研究、多面向查詢 |
+| `projmem_get` | `search expand <id>` | 取回特定 chunk 或文件 |
+| `projmem_multi_get` | — | 批量取回多個項目 |
+| `projmem_status` | `health` | 索引統計與健康狀態 |
+| `projmem_session_list` | `session list` | 列出 sessions（含 summary 狀態過濾） |
+| `projmem_session_transcript` | — | 讀取完整對話 transcript |
+| `projmem_session_update_summary` | — | 儲存 Claude 生成的結構化摘要 |
 
 ### Claude Code 設定
 
-`npx projecthub init` 會自動在專案根目錄建立 `.mcp.json`，團隊成員可透過版本控制共享此設定：
+`npx projmem init` 會自動在專案根目錄建立 `.mcp.json`，團隊成員可透過版本控制共享此設定：
 
 ```json
 {
   "mcpServers": {
-    "projecthub": {
+    "projmem": {
       "command": "npx",
-      "args": ["-y", "projecthub", "mcp"]
+      "args": ["-y", "projmem", "mcp"]
     }
   }
 }
@@ -310,7 +310,7 @@ ranks 11+:   finalScore = 0.40 × rrfScore + 0.60 × rerankerScore
 
 ## 設定
 
-透過 `.projecthub.json` 設定。合併優先順序：**預設值 < 設定檔 < 程式碼覆蓋值**。
+透過 `.projmem.json` 設定。合併優先順序：**預設值 < 設定檔 < 程式碼覆蓋值**。
 
 ### 使用 Ollama 本地服務
 
@@ -345,7 +345,7 @@ mkdir -p localai-models
 docker run -d --name localai \
   -p 8080:8080 \
   -v ./localai-models:/build/models \
-  -e API_KEY=sk-projecthub-secret-123 \
+  -e API_KEY=sk-projmem-secret-123 \
   -e THREADS=4 \
   localai/localai:latest-cpu
 ```
@@ -356,7 +356,7 @@ docker run -d --name localai \
 docker run -d --name localai \
   -p 8080:8080 \
   -v ./localai-models:/build/models \
-  -e API_KEY=sk-projecthub-secret-123 \
+  -e API_KEY=sk-projmem-secret-123 \
   -e THREADS=4 \
   --gpus all \
   localai/localai:latest-gpu-nvidia-cuda-12
@@ -366,15 +366,15 @@ docker run -d --name localai \
 
 ```bash
 # Embedding 模型
-curl http://localhost:8080/models/apply -H "Authorization: Bearer sk-projecthub-secret-123" \
+curl http://localhost:8080/models/apply -H "Authorization: Bearer sk-projmem-secret-123" \
   -d '{"url": "huggingface://lm-kit/embeddinggemma-300M-GGUF/embeddinggemma-300M-Q8_0.gguf", "name": "embeddinggemma-300M-Q8_0", "backend": "llama-cpp"}'
 
 # Query Expansion 模型（chat）
-curl http://localhost:8080/models/apply -H "Authorization: Bearer sk-projecthub-secret-123" \
+curl http://localhost:8080/models/apply -H "Authorization: Bearer sk-projmem-secret-123" \
   -d '{"url": "huggingface://lm-kit/qmd-query-expansion-1.7B-GGUF/qmd-query-expansion-1.7B-q4_k_m.gguf", "name": "qmd-query-expansion-1.7B-q4_k_m", "backend": "llama-cpp"}'
 
 # Reranker 模型（cross-encoder → /v1/rerank）
-curl http://localhost:8080/models/apply -H "Authorization: Bearer sk-projecthub-secret-123" \
+curl http://localhost:8080/models/apply -H "Authorization: Bearer sk-projmem-secret-123" \
   -d '{"url": "huggingface://lm-kit/qwen3-reranker-0.6B-GGUF/qwen3-reranker-0.6b-q8_0.gguf", "name": "qwen3-reranker-0.6b-q8_0", "backend": "llama-cpp"}'
 ```
 
@@ -383,35 +383,35 @@ curl http://localhost:8080/models/apply -H "Authorization: Bearer sk-projecthub-
 ```bash
 # Embedding
 curl http://localhost:8080/v1/embeddings \
-  -H "Authorization: Bearer sk-projecthub-secret-123" \
+  -H "Authorization: Bearer sk-projmem-secret-123" \
   -d '{"model":"embeddinggemma-300M-Q8_0","input":"test"}'
 
 # Query Expansion（chat completions）
 curl http://localhost:8080/v1/chat/completions \
-  -H "Authorization: Bearer sk-projecthub-secret-123" \
+  -H "Authorization: Bearer sk-projmem-secret-123" \
   -d '{"model":"qmd-query-expansion-1.7B-q4_k_m","messages":[{"role":"user","content":"ping"}]}'
 
 # Reranker（/v1/rerank endpoint）
 curl http://localhost:8080/v1/rerank \
-  -H "Authorization: Bearer sk-projecthub-secret-123" \
+  -H "Authorization: Bearer sk-projmem-secret-123" \
   -d '{"model":"qwen3-reranker-0.6b-q8_0","query":"auth","documents":["JWT login","avatar upload"]}'
 ```
 
-#### 4. `.projecthub.json` 設定
+#### 4. `.projmem.json` 設定
 
 ```json
 {
   "embedding": {
     "provider": "openai",
     "baseUrl": "http://localhost:8080/v1",
-    "apiKey": "sk-projecthub-secret-123",
+    "apiKey": "sk-projmem-secret-123",
     "model": "embeddinggemma-300M-Q8_0",
     "dimension": 256
   },
   "llm": {
     "provider": "openai-compatible",
     "baseUrl": "http://localhost:8080/v1",
-    "apiKey": "sk-projecthub-secret-123",
+    "apiKey": "sk-projmem-secret-123",
     "model": "qmd-query-expansion-1.7B-q4_k_m",
     "rerankerModel": "qwen3-reranker-0.6b-q8_0",
     "rerankerStrategy": "endpoint"
@@ -447,9 +447,9 @@ curl http://localhost:8080/v1/rerank \
     "folders": ["code-notes", "rules", "integrations", "sessions", "structure"]
   },
   "index": {
-    "dbPath": "vault/.projecthub/index.db",
-    "dirtyFilePath": "vault/.projecthub/dirty-files.txt",
-    "auditLogPath": "vault/.projecthub/audit.log"
+    "dbPath": "vault/.projmem/index.db",
+    "dirtyFilePath": "vault/.projmem/dirty-files.txt",
+    "auditLogPath": "vault/.projmem/audit.log"
   },
   "embedding": {
     "provider": "openai",
@@ -503,7 +503,7 @@ curl http://localhost:8080/v1/rerank \
 切換 embedding model 導致維度不同時：
 
 1. `DatabaseManager` 啟動時偵測維度不符
-2. 拒絕啟動並提示 `"Run projecthub reindex --force"`
+2. 拒絕啟動並提示 `"Run projmem reindex --force"`
 3. `reindex --force` 刪除向量表並重新嵌入所有 chunks
 
 ---
@@ -513,7 +513,7 @@ curl http://localhost:8080/v1/rerank \
 階層式 context metadata，使用虛擬路徑 scheme：
 
 ```
-projecthub://code-notes/services/auth
+projmem://code-notes/services/auth
 ```
 
 **階層繼承**：查詢 `code-notes/services/auth/jwt.md` 時，會回傳 `auth`、`services`、`code-notes` 所有祖先的 context。搜尋結果自動附帶 applicable contexts。
@@ -529,7 +529,7 @@ vault/
 ├── integrations/        # 第三方整合文件
 ├── sessions/            # 自動產生的 Session Markdown 檔案
 ├── structure/           # 目錄地圖、依賴圖
-└── .projecthub/
+└── .projmem/
     ├── index.db         # SQLite 資料庫（FTS5 + vec0 + llm_cache）
     ├── dirty-files.txt  # 已修改檔案路徑
     └── audit.log        # 索引操作審計日誌
@@ -541,7 +541,7 @@ vault/
 
 ### SKILL.md 觸發詞
 
-SKILL.md 位於 `.claude/skills/projecthub/SKILL.md`，觸發詞包含：`project knowledge`、`code explanation`、`search`、`find in notes`、`session`、`what do we know about`。
+SKILL.md 位於 `.claude/skills/projmem/SKILL.md`，觸發詞包含：`project knowledge`、`code explanation`、`search`、`find in notes`、`session`、`what do we know about`。
 
 ### Hook 腳本
 
@@ -641,7 +641,7 @@ tests/
 ## 專案結構
 
 ```
-ProjectHub/
+projmem/
 ├── src/
 │   ├── config/              # 設定型別、預設值、載入器
 │   ├── domain/

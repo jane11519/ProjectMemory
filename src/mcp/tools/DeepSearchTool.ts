@@ -4,13 +4,13 @@ import { SearchUseCase } from '../../application/SearchUseCase.js';
 import type { McpDependencies } from '../McpServer.js';
 
 /**
- * MCP Tool: projecthub_deep_search
- * 對應 CLI: projecthub search --mode deep
+ * MCP Tool: projmem_deep_search
+ * 對應 CLI: projmem search --mode deep
  * 完整搜尋管線：Query Expansion + RRF 融合 + LLM Re-ranking。
  */
 export function registerDeepSearchTool(server: McpServer, deps: McpDependencies): void {
   server.tool(
-    'projecthub_deep_search',
+    'projmem_deep_search',
     'Full search pipeline with query expansion, RRF fusion, and LLM re-ranking',
     {
       query: z.string().describe('Search query string'),

@@ -8,7 +8,7 @@ import os from 'node:os';
 describe('FTS5Adapter', () => {
   let mgr: DatabaseManager;
   let adapter: FTS5Adapter;
-  const tmpDir = path.join(os.tmpdir(), 'projecthub-fts5-' + Date.now());
+  const tmpDir = path.join(os.tmpdir(), 'projmem-fts5-' + Date.now());
 
   beforeEach(() => {
     fs.mkdirSync(tmpDir, { recursive: true });

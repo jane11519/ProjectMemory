@@ -18,7 +18,7 @@ Context 系統為 vault 中的文件路徑提供層級式的語意描述。當�
 `PathContext` 使用虛擬路徑（非檔案系統路徑）作為 key：
 
 ```
-code-notes                → "ProjectHub 架構筆記：設計決策、管線演算法、領域模型"
+code-notes                → "projmem 架構筆記：設計決策、管線演算法、領域模型"
 code-notes/services       → "微服務相關的設計筆記"
 code-notes/services/auth  → "認證服務的實作細節"
 ```
@@ -49,16 +49,16 @@ code-notes/services/auth  → "認證服務的實作細節"
 ### CLI 指令
 ```bash
 # 新增 context
-npx projecthub context add "code-notes" "ProjectHub 架構筆記"
+npx projmem context add "code-notes" "projmem 架構筆記"
 
 # 列出所有 context
-npx projecthub context list
+npx projmem context list
 
 # 查詢適用 context（含繼承）
-npx projecthub context check "code-notes/services/auth"
+npx projmem context check "code-notes/services/auth"
 
 # 刪除 context
-npx projecthub context rm "code-notes"
+npx projmem context rm "code-notes"
 ```
 
 ### 搜尋結果中的 Context

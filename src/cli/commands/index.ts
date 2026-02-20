@@ -100,7 +100,7 @@ function createIndexUseCase(dbMgr: DatabaseManager, config: ReturnType<typeof lo
 }
 
 /** 確保 root namespace 已存在 */
-function ensureRootNamespace(dbMgr: DatabaseManager): void {
+export function ensureRootNamespace(dbMgr: DatabaseManager): void {
   const db = dbMgr.getDb();
   const existing = db.prepare("SELECT namespace_id FROM namespaces WHERE name = 'root'").get();
   if (!existing) {

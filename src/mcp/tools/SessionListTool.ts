@@ -3,7 +3,7 @@ import { z } from 'zod';
 import type { SessionUseCase } from '../../application/SessionUseCase.js';
 
 /**
- * MCP Tool: projecthub_session_list
+ * MCP Tool: projmem_session_list
  * 列出 sessions，支援 status / hasSummary 過濾。
  * 讓 Claude 知道哪些 session 需要 summarize。
  */
@@ -12,7 +12,7 @@ export function registerSessionListTool(
   sessionUseCase: SessionUseCase,
 ): void {
   server.tool(
-    'projecthub_session_list',
+    'projmem_session_list',
     'List sessions with optional filters. Shows which sessions have summaries.',
     {
       status: z.enum(['active', 'compacted', 'closed']).optional()

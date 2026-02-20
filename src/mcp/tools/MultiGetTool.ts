@@ -3,13 +3,13 @@ import { z } from 'zod';
 import type { McpDependencies } from '../McpServer.js';
 
 /**
- * MCP Tool: projecthub_multi_get
+ * MCP Tool: projmem_multi_get
  * 批量取回多個 chunk 或 doc 的內容。
  * 支援 chunkId 列表或 docPath glob pattern。
  */
 export function registerMultiGetTool(server: McpServer, deps: McpDependencies): void {
   server.tool(
-    'projecthub_multi_get',
+    'projmem_multi_get',
     'Batch retrieve multiple chunks by IDs or documents by path pattern',
     {
       chunkIds: z.array(z.number()).optional().describe('List of chunk IDs to retrieve'),

@@ -4,13 +4,13 @@ import { SearchUseCase } from '../../application/SearchUseCase.js';
 import type { McpDependencies } from '../McpServer.js';
 
 /**
- * MCP Tool: projecthub_search
- * 對應 CLI: projecthub search <query>
+ * MCP Tool: projmem_search
+ * 對應 CLI: projmem search <query>
  * BM25 關鍵字搜尋，適合精確匹配和已知術語。
  */
 export function registerSearchTool(server: McpServer, deps: McpDependencies): void {
   server.tool(
-    'projecthub_search',
+    'projmem_search',
     'BM25 keyword search for exact term matches in the knowledge base',
     {
       query: z.string().describe('Search query string'),

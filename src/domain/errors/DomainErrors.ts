@@ -1,7 +1,7 @@
 export type ErrorClassification = 'retryable' | 'degradable' | 'manual';
 
-/** 所有 ProjectHub domain 錯誤的基底類別 */
-export abstract class ProjectHubError extends Error {
+/** 所有 projmem domain 錯誤的基底類別 */
+export abstract class ProjMemError extends Error {
   abstract readonly classification: ErrorClassification;
   abstract readonly code: string;
 
@@ -13,21 +13,21 @@ export abstract class ProjectHubError extends Error {
 
 // --- Retryable ---
 
-export class SqliteBusyError extends ProjectHubError {
+export class SqliteBusyError extends ProjMemError {
   readonly classification = 'retryable' as const;
   readonly code = 'SQLITE_BUSY';
   readonly maxRetries = 5;
   readonly baseDelayMs = 100;
 }
 
-export class EmbeddingRateLimitError extends ProjectHubError {
+export class EmbeddingRateLimitError extends ProjMemError {
   readonly classification = 'retryable' as const;
   readonly code = 'EMBEDDING_RATE_LIMIT';
   readonly maxRetries = 3;
   readonly baseDelayMs = 1000;
 }
 
-export class FileTemporarilyUnavailableError extends ProjectHubError {
+export class FileTemporarilyUnavailableError extends ProjMemError {
   readonly classification = 'retryable' as const;
   readonly code = 'FILE_TEMP_UNAVAILABLE';
   readonly maxRetries = 2;
@@ -36,24 +36,24 @@ export class FileTemporarilyUnavailableError extends ProjectHubError {
 
 // --- Degradable ---
 
-export class EmbeddingUnavailableError extends ProjectHubError {
+export class EmbeddingUnavailableError extends ProjMemError {
   readonly classification = 'degradable' as const;
   readonly code = 'EMBEDDING_UNAVAILABLE';
 }
 
-export class VectorIndexCorruptError extends ProjectHubError {
+export class VectorIndexCorruptError extends ProjMemError {
   readonly classification = 'degradable' as const;
   readonly code = 'VEC_INDEX_CORRUPT';
 }
 
-export class FTSIndexCorruptError extends ProjectHubError {
+export class FTSIndexCorruptError extends ProjMemError {
   readonly classification = 'degradable' as const;
   readonly code = 'FTS_INDEX_CORRUPT';
 }
 
 // --- Manual ---
 
-export class ContentHashConflictError extends ProjectHubError {
+export class ContentHashConflictError extends ProjMemError {
   readonly classification = 'manual' as const;
   readonly code = 'HASH_CONFLICT';
 
@@ -67,7 +67,7 @@ export class ContentHashConflictError extends ProjectHubError {
   }
 }
 
-export class SubmoduleNotInitializedError extends ProjectHubError {
+export class SubmoduleNotInitializedError extends ProjMemError {
   readonly classification = 'manual' as const;
   readonly code = 'SUBMODULE_NOT_INIT';
 
@@ -82,7 +82,7 @@ export class SubmoduleNotInitializedError extends ProjectHubError {
   }
 }
 
-export class SchemaMigrationRequiredError extends ProjectHubError {
+export class SchemaMigrationRequiredError extends ProjMemError {
   readonly classification = 'manual' as const;
   readonly code = 'SCHEMA_MIGRATION';
 }

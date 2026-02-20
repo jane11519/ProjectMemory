@@ -132,7 +132,7 @@ export class ContextUseCase {
   /** 正規化路徑：移除 protocol prefix 和尾端斜線 */
   private normalizePath(path: string): string {
     return path
-      .replace(/^projecthub:\/\//, '')
+      .replace(/^projmem:\/\//, '')
       .replace(/^\/+/, '')
       .replace(/\/+$/, '');
   }

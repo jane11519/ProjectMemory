@@ -1,6 +1,6 @@
 ---
 title: "CLI 指令完整參考"
-tags: [CLI, commander, init, scan, index, search, context, session, health, mcp, projecthub]
+tags: [CLI, commander, init, scan, index, search, context, session, health, mcp, projmem]
 source_kind: code_note
 date: 2026-02-20
 ---
@@ -9,22 +9,22 @@ date: 2026-02-20
 
 ## CLI 概覽
 
-ProjectHub CLI 基於 Commander.js，主程式入口為 `projecthub`（透過 `npx projecthub` 或全域安裝後直接呼叫）。指令群組涵蓋專案初始化、索引管理、搜尋、context、session 和 MCP Server 啟動。
+projmem CLI 基於 Commander.js，主程式入口為 `projmem`（透過 `npx projmem` 或全域安裝後直接呼叫）。指令群組涵蓋專案初始化、索引管理、搜尋、context、session 和 MCP Server 啟動。
 
 ## init — 專案初始化
 
-在目標專案中初始化 ProjectHub 環境。
+在目標專案中初始化 projmem 環境。
 
 ```bash
-npx projecthub init [--target <dir>]
+npx projmem init [--target <dir>]
 ```
 
 **執行步驟：**
-1. 複製 skill 檔案到 `.claude/skills/projecthub/`
+1. 複製 skill 檔案到 `.claude/skills/projmem/`
 2. 合併 hooks 到 `.claude/settings.json`（PostToolUse、TaskCompleted、Stop 事件）
-3. 從 `DEFAULT_CONFIG` 產生 `.projecthub.json`
+3. 從 `DEFAULT_CONFIG` 產生 `.projmem.json`
 4. 建立 vault 目錄結構（code-notes、rules、integrations、sessions、structure）+ `.gitignore`
-5. 建立/合併 `.mcp.json`（projecthub MCP server entry）
+5. 建立/合併 `.mcp.json`（projmem MCP server entry）
 6. 初始化 SQLite 資料庫（建表 + 建立 root namespace）
 7. 輸出初始化報告
 
@@ -35,7 +35,7 @@ npx projecthub init [--target <dir>]
 偵測專案中的命名空間和 vault 文件。
 
 ```bash
-npx projecthub scan [--repo-root <dir>] [--format json|text]
+npx projmem scan [--repo-root <dir>] [--format json|text]
 ```
 
 **偵測項目：**
@@ -48,7 +48,7 @@ npx projecthub scan [--repo-root <dir>] [--format json|text]
 ### index build — 全量建索引
 
 ```bash
-npx projecthub index build [--repo-root <dir>] [--format json|text]
+npx projmem index build [--repo-root <dir>] [--format json|text]
 ```
 
 掃描所有 vault 資料夾，對每個 Markdown 檔案執行完整索引流程（解析 → 切塊 → FTS5 → embedding → vec0）。
@@ -58,7 +58,7 @@ npx projecthub index build [--repo-root <dir>] [--format json|text]
 ### index update — 增量更新
 
 ```bash
-npx projecthub index update [--repo-root <dir>] [--format json|text]
+npx projmem index update [--repo-root <dir>] [--format json|text]
 ```
 
 僅處理 `dirty-files.txt` 中列出的變更檔案。比對 `content_hash` 決定是否需要重新索引。
@@ -68,7 +68,7 @@ npx projecthub index update [--repo-root <dir>] [--format json|text]
 ### search \<query\> — 主搜尋
 
 ```bash
-npx projecthub search <query> [options]
+npx projmem search <query> [options]
 ```
 
 **選項：**
@@ -85,7 +85,7 @@ npx projecthub search <query> [options]
 ### search expand \<chunkId\> — 展開 Chunk
 
 ```bash
-npx projecthub search expand <chunkId>
+npx projmem search expand <chunkId>
 ```
 
 顯示指定 chunk 的完整文字，包含 heading path、行號範圍。
@@ -93,7 +93,7 @@ npx projecthub search expand <chunkId>
 ### search full \<docPath\> — 展開文件
 
 ```bash
-npx projecthub search full <docPath>
+npx projmem search full <docPath>
 ```
 
 顯示指定文件的所有 chunks，按 chunk_index 排序。
@@ -103,7 +103,7 @@ npx projecthub search full <docPath>
 ### context add — 新增/更新
 
 ```bash
-npx projecthub context add <virtualPath> <description>
+npx projmem context add <virtualPath> <description>
 ```
 
 新增或更新虛擬路徑的 context 描述。使用 upsert 語意。
@@ -111,13 +111,13 @@ npx projecthub context add <virtualPath> <description>
 ### context list — 列出所有
 
 ```bash
-npx projecthub context list [--format json|text]
+npx projmem context list [--format json|text]
 ```
 
 ### context check — 查詢（含繼承）
 
 ```bash
-npx projecthub context check <virtualPath>
+npx projmem context check <virtualPath>
 ```
 
 顯示指定路徑及其所有祖先路徑的 context 描述。
@@ -125,7 +125,7 @@ npx projecthub context check <virtualPath>
 ### context rm — 刪除
 
 ```bash
-npx projecthub context rm <virtualPath>
+npx projmem context rm <virtualPath>
 ```
 
 ## session — Session 管理
@@ -133,7 +133,7 @@ npx projecthub context rm <virtualPath>
 ### session capture — 擷取 Transcript
 
 ```bash
-npx projecthub session capture [--repo-root <dir>] [--format json|text]
+npx projmem session capture [--repo-root <dir>] [--format json|text]
 ```
 
 從 Claude Code 的 JSONL session 檔案中提取對話記錄並儲存。自動定位 Claude Code session 路徑（根據專案目錄編碼）。
@@ -141,7 +141,7 @@ npx projecthub session capture [--repo-root <dir>] [--format json|text]
 ### session save — 儲存快照
 
 ```bash
-npx projecthub session save [--session-id <id>] [--repo-root <dir>]
+npx projmem session save [--session-id <id>] [--repo-root <dir>]
 ```
 
 將 session 快照儲存至 SQLite 並匯出 vault Markdown。
@@ -149,7 +149,7 @@ npx projecthub session save [--session-id <id>] [--repo-root <dir>]
 ### session list — 列出 Sessions
 
 ```bash
-npx projecthub session list [--format json|text]
+npx projmem session list [--format json|text]
 ```
 
 顯示所有 active 狀態的 sessions。
@@ -157,7 +157,7 @@ npx projecthub session list [--format json|text]
 ### session compact — 壓縮摘要
 
 ```bash
-npx projecthub session compact [--session-id <id>]
+npx projmem session compact [--session-id <id>]
 ```
 
 壓縮 rolling summary，減少 token 佔用。
@@ -165,7 +165,7 @@ npx projecthub session compact [--session-id <id>]
 ## health — 索引健康檢查
 
 ```bash
-npx projecthub health [--repo-root <dir>] [--fix] [--format json|text]
+npx projmem health [--repo-root <dir>] [--fix] [--format json|text]
 ```
 
 **檢查項目：**
@@ -182,7 +182,7 @@ npx projecthub health [--repo-root <dir>] [--fix] [--format json|text]
 ## mcp — 啟動 MCP Server
 
 ```bash
-npx projecthub mcp [--repo-root <dir>] [--http] [--port <n>]
+npx projmem mcp [--repo-root <dir>] [--http] [--port <n>]
 ```
 
 **傳輸模式：**
@@ -190,7 +190,7 @@ npx projecthub mcp [--repo-root <dir>] [--http] [--port <n>]
 - `--http`：HTTP SSE 傳輸，適合遠端或多 client 場景
 
 **啟動流程：**
-1. 載入設定（`.projecthub.json` + defaults merge）
+1. 載入設定（`.projmem.json` + defaults merge）
 2. 初始化 DatabaseManager → DB + FTS5 + Vec
 3. 建立 Embedding Adapter
 4. 建立 LLM Adapter（HttpLLMAdapter 或 NullLLMAdapter）

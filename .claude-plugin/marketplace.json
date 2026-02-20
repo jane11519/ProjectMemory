@@ -6,8 +6,8 @@
   },
   "plugins": [
     {
-      "name": "projecthub",
-      "version": "0.1.0",
+      "name": "projmem",
+      "version": "0.3.0",
       "description": "Project-level Obsidian knowledge base with hybrid BM25+vector search and LLM re-ranking for Claude Code",
       "author": {
         "name": "jane11519",
@@ -25,11 +25,11 @@
         "reranker",
         "mcp"
       ],
-      "skills": "./assets/skill/",
+      "path": "./assets/plugin/",
       "mcpServers": {
-        "projecthub": {
+        "projmem": {
           "command": "npx",
-          "args": ["-y", "projecthub", "mcp"]
+          "args": ["-y", "projmem", "mcp"]
         }
       }
     }

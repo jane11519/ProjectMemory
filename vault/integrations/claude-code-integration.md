@@ -9,22 +9,22 @@ date: 2026-02-20
 
 ## 整合概覽 Integration Overview
 
-ProjectHub 與 Claude Code 的整合包含三個層面：
+projmem 與 Claude Code 的整合包含三個層面：
 1. **MCP Server**：透過 `.mcp.json` 註冊，提供 9 個搜尋/Session 工具
 2. **Hooks**：透過 `.claude/settings.json` 註冊事件鉤子，自動追蹤文件變更
-3. **Skills**：透過 `.claude/skills/projecthub/` 提供自訂技能腳本
+3. **Skills**：透過 `.claude/skills/projmem/` 提供自訂技能腳本
 
-## 一鍵初始化 — projecthub init
+## 一鍵初始化 — projmem init
 
 ```bash
-npx projecthub init [--repo-root <dir>]
+npx projmem init [--repo-root <dir>]
 ```
 
 `init` 指令自動完成所有整合設定：
 
 ### 1. Skill 檔案安裝
 
-從 `assets/skill/` 複製檔案到目標專案的 `.claude/skills/projecthub/`，包含：
+從 `assets/skill/` 複製檔案到目標專案的 `.claude/skills/projmem/`，包含：
 - 主要 skill 描述檔
 - `scripts/track-dirty.sh`：追蹤 vault 文件變更
 - `scripts/on-task-completed.sh`：任務完成時觸發增量索引
@@ -41,21 +41,21 @@ npx projecthub init [--repo-root <dir>]
       "matcher": "Write|Edit",
       "hooks": [{
         "type": "command",
-        "command": "bash .claude/skills/projecthub/scripts/track-dirty.sh \"$TOOL_INPUT_FILE_PATH\"",
+        "command": "bash .claude/skills/projmem/scripts/track-dirty.sh \"$TOOL_INPUT_FILE_PATH\"",
         "timeout": 5
       }]
     }],
     "TaskCompleted": [{
       "hooks": [{
         "type": "command",
-        "command": "bash .claude/skills/projecthub/scripts/on-task-completed.sh",
+        "command": "bash .claude/skills/projmem/scripts/on-task-completed.sh",
         "timeout": 120
       }]
     }],
     "Stop": [{
       "hooks": [{
         "type": "command",
-        "command": "bash .claude/skills/projecthub/scripts/on-stop.sh",
+        "command": "bash .claude/skills/projmem/scripts/on-stop.sh",
         "timeout": 60,
         "async": true
       }]
@@ -73,14 +73,14 @@ npx projecthub init [--repo-root <dir>]
 
 ### 3. MCP Server 設定
 
-在 `.mcp.json` 中新增 projecthub MCP server entry：
+在 `.mcp.json` 中新增 projmem MCP server entry：
 
 ```json
 {
   "mcpServers": {
-    "projecthub": {
+    "projmem": {
       "command": "npx",
-      "args": ["-y", "projecthub", "mcp"],
+      "args": ["-y", "projmem", "mcp"],
       "env": {
         "OPENAI_API_KEY": "${OPENAI_API_KEY}",
         "OPENAI_BASE_URL": "${OPENAI_BASE_URL}"
@@ -95,7 +95,7 @@ npx projecthub init [--repo-root <dir>]
 
 ### 4. 專案設定與 Vault
 
-- 建立 `.projecthub.json`（從 DEFAULT_CONFIG 產生）
+- 建立 `.projmem.json`（從 DEFAULT_CONFIG 產生）
 - 建立 vault 目錄結構（code-notes、rules、integrations、sessions、structure）
 - 建立 vault/.gitignore（排除 SQLite DB 和暫存檔）
 - 初始化 SQLite 資料庫
@@ -108,7 +108,7 @@ npx projecthub init [--repo-root <dir>]
 Claude 修改 vault 文件
   → PostToolUse hook 觸發
   → track-dirty.sh 檢查路徑是否在 vault/ 內
-  → 追加路徑到 vault/.projecthub/dirty-files.txt
+  → 追加路徑到 vault/.projmem/dirty-files.txt
   → TaskCompleted hook 觸發 index update
   → IndexUseCase.buildIncremental() 只處理 dirty files
   → 清空 dirty-files.txt
@@ -120,13 +120,13 @@ Claude 修改 vault 文件
 
 1. Session 結束前，使用 MCP 工具：
    ```
-   projecthub_session_list(hasSummary: false)  → 找到待摘要的 session
-   projecthub_session_transcript(sessionId)     → 讀取完整 transcript
+   projmem_session_list(hasSummary: false)  → 找到待摘要的 session
+   projmem_session_transcript(sessionId)     → 讀取完整 transcript
    ```
 2. Claude 閱讀 transcript 後生成結構化摘要
 3. 寫入摘要：
    ```
-   projecthub_session_update_summary(sessionId, overview, decisions, outcomes, openItems, tags)
+   projmem_session_update_summary(sessionId, overview, decisions, outcomes, openItems, tags)
    ```
 4. 摘要自動匯出為 vault/sessions/ 下的 Markdown 文件，可被索引搜尋
 

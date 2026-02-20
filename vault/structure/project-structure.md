@@ -9,7 +9,7 @@ date: 2026-02-20
 
 ## 頂層結構 Top-Level Layout
 
-ProjectHub 採用 Clean Architecture（Hexagonal Architecture），原始碼依照依賴方向由內而外組織。頂層目錄佈局如下：
+projmem 採用 Clean Architecture（Hexagonal Architecture），原始碼依照依賴方向由內而外組織。頂層目錄佈局如下：
 
 ```
 RepoMemory/
@@ -26,12 +26,12 @@ RepoMemory/
 │   ├── integrations/       # 外部服務整合文件
 │   ├── structure/          # 目錄結構與 Schema 參考
 │   ├── sessions/           # Session 摘要匯出
-│   └── .projecthub/        # 索引資料庫與內部狀態
+│   └── .projmem/        # 索引資料庫與內部狀態
 ├── tests/                  # 測試檔案
 │   ├── unit/               # 單元測試
 │   └── integration/        # 整合測試
 ├── assets/                 # 靜態資源（技能檔等）
-├── .projecthub.json        # 專案設定檔
+├── .projmem.json        # 專案設定檔
 └── package.json            # Node.js 套件描述
 ```
 
@@ -115,26 +115,26 @@ MCP（Model Context Protocol）Server 提供 AI 工具呼叫介面。所有工�
 src/mcp/
 ├── McpServer.ts            # 工廠函式 + MCP instructions 產生
 ├── tools/                  # 個別工具註冊
-│   ├── SearchTool.ts       # projecthub_search（BM25 關鍵字搜尋）
-│   ├── VectorSearchTool.ts # projecthub_vector_search（語義搜尋）
-│   ├── DeepSearchTool.ts   # projecthub_deep_search（完整管線）
-│   ├── GetTool.ts          # projecthub_get（單一 chunk/doc 取得）
-│   ├── MultiGetTool.ts     # projecthub_multi_get（批次取得）
-│   ├── StatusTool.ts       # projecthub_status（索引狀態）
-│   ├── SessionListTool.ts        # projecthub_session_list
-│   ├── SessionTranscriptTool.ts  # projecthub_session_transcript
-│   └── SessionUpdateSummaryTool.ts # projecthub_session_update_summary
+│   ├── SearchTool.ts       # projmem_search（BM25 關鍵字搜尋）
+│   ├── VectorSearchTool.ts # projmem_vector_search（語義搜尋）
+│   ├── DeepSearchTool.ts   # projmem_deep_search（完整管線）
+│   ├── GetTool.ts          # projmem_get（單一 chunk/doc 取得）
+│   ├── MultiGetTool.ts     # projmem_multi_get（批次取得）
+│   ├── StatusTool.ts       # projmem_status（索引狀態）
+│   ├── SessionListTool.ts        # projmem_session_list
+│   ├── SessionTranscriptTool.ts  # projmem_session_transcript
+│   └── SessionUpdateSummaryTool.ts # projmem_session_update_summary
 └── transports/             # MCP 傳輸層
     └── ...                 # stdio / HTTP SSE 傳輸實作
 ```
 
 ## vault/ — 知識庫結構
 
-vault 是 ProjectHub 管理的文件儲存區，遵循固定的資料夾慣例。所有 Markdown 文件經索引後可透過 MCP 工具搜尋。
+vault 是 projmem 管理的文件儲存區，遵循固定的資料夾慣例。所有 Markdown 文件經索引後可透過 MCP 工具搜尋。
 
 ```
 vault/
-├── .projecthub/            # 內部狀態（不進版控）
+├── .projmem/            # 內部狀態（不進版控）
 │   ├── index.db            # SQLite 資料庫（FTS5 + vec0 + chunks）
 │   ├── dirty-files.txt     # 增量索引用的變更檔案清單
 │   └── audit.log           # 審計日誌

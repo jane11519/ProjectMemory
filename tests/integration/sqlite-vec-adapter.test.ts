@@ -9,7 +9,7 @@ describe('SqliteVecAdapter', () => {
   let mgr: DatabaseManager;
   let adapter: SqliteVecAdapter;
   const dim = 4; // 測試用小維度
-  const tmpDir = path.join(os.tmpdir(), 'projecthub-vec-' + Date.now());
+  const tmpDir = path.join(os.tmpdir(), 'projmem-vec-' + Date.now());
 
   beforeEach(() => {
     fs.mkdirSync(tmpDir, { recursive: true });

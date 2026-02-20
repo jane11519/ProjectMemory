@@ -19,7 +19,7 @@ import type Database from 'better-sqlite3';
  * 註冊 mcp 指令
  *
  * 用法：
- *   projecthub mcp [--repo-root .] [--http] [--port 8181]
+ *   projmem mcp [--repo-root .] [--http] [--port 8181]
  */
 export function registerMcpCommand(program: Command): void {
   program

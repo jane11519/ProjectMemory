@@ -4,7 +4,7 @@ import type { SessionUseCase } from '../../application/SessionUseCase.js';
 import type { SessionSummary } from '../../domain/value-objects/SessionSummary.js';
 
 /**
- * MCP Tool: projecthub_session_update_summary
+ * MCP Tool: projmem_session_update_summary
  * 儲存 Claude 生成的結構化 summary。
  * Claude 讀取 transcript 後呼叫此 tool 寫回 DB + vault。
  */
@@ -13,7 +13,7 @@ export function registerSessionUpdateSummaryTool(
   sessionUseCase: SessionUseCase,
 ): void {
   server.tool(
-    'projecthub_session_update_summary',
+    'projmem_session_update_summary',
     'Save a structured summary for a session. Call this after reading the transcript and generating a summary.',
     {
       sessionId: z.string().describe('Session ID to update'),

@@ -3,7 +3,7 @@ import { z } from 'zod';
 import type { SessionUseCase } from '../../application/SessionUseCase.js';
 
 /**
- * MCP Tool: projecthub_session_transcript
+ * MCP Tool: projmem_session_transcript
  * 讀取完整 transcript，讓 Claude 閱讀後生成 summary。
  * 若未指定 sessionId，預設取最近的 session。
  */
@@ -12,7 +12,7 @@ export function registerSessionTranscriptTool(
   sessionUseCase: SessionUseCase,
 ): void {
   server.tool(
-    'projecthub_session_transcript',
+    'projmem_session_transcript',
     'Get full conversation transcript for a session. Returns formatted conversation turns.',
     {
       sessionId: z.string().optional()
