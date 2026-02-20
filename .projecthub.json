@@ -11,8 +11,8 @@
   },
   "embedding": {
     "provider": "openai",
-    "model": "text-embedding-3-small",
-    "dimension": 1536,
+    "model": "text-embedding",
+    "dimension": 768,
     "maxBatchSize": 100
   },
   "search": {
@@ -33,6 +33,13 @@
   "chunking": {
     "maxTokensPerChunk": 512,
     "overlapLines": 2
+  },
+  "llm": {
+    "provider": "openai-compatible",
+    "model": "llm",
+    "rerankerModel": "reranker",
+    "rerankerStrategy": "endpoint",
+    "cacheTTLMs": 3600000
   },
   "session": {
     "autoSaveAfterTurns": 10,

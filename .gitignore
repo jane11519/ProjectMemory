@@ -10,5 +10,6 @@ vault/.projecthub/audit.log
 vault/.obsidian/workspace.json
 vault/.obsidian/workspace-mobile.json
 .env
+.mcp.json
 *.log
 coverage/

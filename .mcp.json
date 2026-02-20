@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "projecthub": {
-      "command": "npx",
-      "args": ["-y", "projecthub", "mcp"]
-    }
-  }
-}

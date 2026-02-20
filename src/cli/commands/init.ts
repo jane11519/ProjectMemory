@@ -18,26 +18,37 @@ interface InitResult {
 }
 
 /** .mcp.json 的結構型別 */
+interface McpServerEntry {
+  command: string;
+  args: string[];
+  env?: Record<string, string>;
+}
 interface McpConfig {
-  mcpServers?: Record<string, { command: string; args: string[] }>;
+  mcpServers?: Record<string, McpServerEntry>;
   [key: string]: unknown;
 }
 
-/** Claude Code settings.json 的 hook 定義 */
-interface HookEntry {
-  matcher?: string;
+/** Claude Code hook handler（新格式） */
+interface HookHandler {
+  type: 'command';
   command: string;
-  timeout: number;
+  timeout?: number;
   async?: boolean;
+}
+
+/** Claude Code hook matcher group（新格式） */
+interface HookMatcherGroup {
+  matcher?: string;
+  hooks: HookHandler[];
 }
 
 /** Claude Code settings.json 的結構 */
 interface ClaudeSettings {
   hooks?: {
-    PostToolUse?: HookEntry[];
-    TaskCompleted?: HookEntry[];
-    Stop?: HookEntry[];
-    [key: string]: HookEntry[] | undefined;
+    PostToolUse?: HookMatcherGroup[];
+    TaskCompleted?: HookMatcherGroup[];
+    Stop?: HookMatcherGroup[];
+    [key: string]: HookMatcherGroup[] | undefined;
   };
   [key: string]: unknown;
 }
@@ -100,23 +111,30 @@ function getDefaultHooks(): Required<NonNullable<ClaudeSettings['hooks']>> {
     PostToolUse: [
       {
         matcher: 'Write|Edit',
-        command: 'bash .claude/skills/projecthub/scripts/track-dirty.sh "$TOOL_INPUT_FILE_PATH"',
-        timeout: 5000,
-        async: false,
+        hooks: [{
+          type: 'command',
+          command: 'bash .claude/skills/projecthub/scripts/track-dirty.sh "$TOOL_INPUT_FILE_PATH"',
+          timeout: 5,
+        }],
       },
     ],
     TaskCompleted: [
       {
-        command: 'bash .claude/skills/projecthub/scripts/on-task-completed.sh',
-        timeout: 120000,
-        async: false,
+        hooks: [{
+          type: 'command',
+          command: 'bash .claude/skills/projecthub/scripts/on-task-completed.sh',
+          timeout: 120,
+        }],
       },
     ],
     Stop: [
       {
-        command: 'bash .claude/skills/projecthub/scripts/on-stop.sh',
-        timeout: 60000,
-        async: true,
+        hooks: [{
+          type: 'command',
+          command: 'bash .claude/skills/projecthub/scripts/on-stop.sh',
+          timeout: 60,
+          async: true,
+        }],
       },
     ],
   };
@@ -134,16 +152,17 @@ function mergeSettings(existing: ClaudeSettings): ClaudeSettings {
 
   const defaultHooks = getDefaultHooks();
 
-  for (const [eventName, newEntries] of Object.entries(defaultHooks)) {
-    if (!newEntries) continue;
-    const existingEntries = result.hooks[eventName] ?? [];
-    const merged = [...existingEntries];
+  for (const [eventName, newGroups] of Object.entries(defaultHooks)) {
+    if (!newGroups) continue;
+    const existingGroups = result.hooks[eventName] ?? [];
+    const merged = [...existingGroups];
 
-    for (const entry of newEntries) {
-      const alreadyExists = merged.some((e) => e.command === entry.command);
-      if (!alreadyExists) {
-        merged.push(entry);
-      }
+    for (const group of newGroups) {
+      const cmd = group.hooks[0]?.command;
+      const alreadyExists = merged.some((g) =>
+        g.hooks?.some((h) => h.command === cmd),
+      );
+      if (!alreadyExists) merged.push(group);
     }
 
     result.hooks[eventName] = merged;
@@ -233,15 +252,33 @@ function ensureVaultDirs(repoRoot: string): number {
 }
 
 /**
+ * 確保 .gitignore 包含指定項目（避免敏感檔案進版控）
+ */
+function ensureGitignoreEntry(repoRoot: string, entry: string): void {
+  const gitignorePath = path.join(repoRoot, '.gitignore');
+  if (fs.existsSync(gitignorePath)) {
+    const content = fs.readFileSync(gitignorePath, 'utf-8');
+    if (content.split('\n').some((line) => line.trim() === entry)) return;
+    fs.appendFileSync(gitignorePath, `\n${entry}\n`, 'utf-8');
+  } else {
+    fs.writeFileSync(gitignorePath, `${entry}\n`, 'utf-8');
+  }
+}
+
+/**
  * 確保目標專案的 .mcp.json 中包含 ProjectHub MCP server 設定
  * 若檔案不存在則建立，若已存在則 merge（不覆蓋使用者的其他 MCP servers）
  * @returns 是否有實際寫入變更
  */
 function ensureMcpConfig(repoRoot: string): boolean {
   const mcpPath = path.join(repoRoot, '.mcp.json');
-  const projecthubServer = {
+  const projecthubServer: McpServerEntry = {
     command: 'npx',
     args: ['-y', 'projecthub', 'mcp'],
+    env: {
+      OPENAI_API_KEY: '${OPENAI_API_KEY}',
+      OPENAI_BASE_URL: '${OPENAI_BASE_URL}',
+    },
   };
 
   let existing: McpConfig = {};
@@ -264,6 +301,10 @@ function ensureMcpConfig(repoRoot: string): boolean {
   };
 
   fs.writeFileSync(mcpPath, JSON.stringify(merged, null, 2) + '\n', 'utf-8');
+
+  // 確保 .mcp.json 被 .gitignore 排除（含 API key，不應進版控）
+  ensureGitignoreEntry(repoRoot, '.mcp.json');
+
   return true;
 }
 
@@ -299,7 +340,7 @@ function formatTextResult(result: InitResult): string {
     '',
     'Next steps:',
     '  1. Add Markdown notes to vault/code-notes/',
-    '  2. Set OPENAI_API_KEY environment variable',
+    '  2. Set OPENAI_API_KEY and OPENAI_BASE_URL in .mcp.json env field',
     '  3. Run: npx projecthub scan',
     '  4. Run: npx projecthub index build',
     '  5. Restart Claude Code to activate MCP server',

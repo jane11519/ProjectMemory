@@ -3,23 +3,36 @@
     "PostToolUse": [
       {
         "matcher": "Write|Edit",
-        "command": "bash .claude/skills/projecthub/scripts/track-dirty.sh \"$TOOL_INPUT_FILE_PATH\"",
-        "timeout": 5000,
-        "async": false
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/skills/projecthub/scripts/track-dirty.sh \"$TOOL_INPUT_FILE_PATH\"",
+            "timeout": 5
+          }
+        ]
       }
     ],
     "TaskCompleted": [
       {
-        "command": "bash .claude/skills/projecthub/scripts/on-task-completed.sh",
-        "timeout": 120000,
-        "async": false
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/skills/projecthub/scripts/on-task-completed.sh",
+            "timeout": 120
+          }
+        ]
       }
     ],
     "Stop": [
       {
-        "command": "bash .claude/skills/projecthub/scripts/on-stop.sh",
-        "timeout": 60000,
-        "async": true
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/skills/projecthub/scripts/on-stop.sh",
+            "timeout": 60,
+            "async": true
+          }
+        ]
       }
     ]
   }

@@ -194,7 +194,7 @@ Return ONLY the JSON array, no other text.`,
         throw new Error(`Rerank endpoint returned ${response.status}: ${await response.text()}`);
       }
 
-      const data = await response.json();
+      const data = await response.json() as { results?: { index: number; relevance_score?: number }[] };
       // Jina/Cohere/LocalAI 格式：{ results: [{ index, relevance_score }] }
       return (data.results ?? [])
         .filter((r: any) => typeof r.index === 'number' && r.index < candidates.length)

@@ -19,6 +19,15 @@ function deepMerge<T extends Record<string, any>>(base: T, partial: Partial<T>):
   return result;
 }
 
+/** 環境變數覆蓋 config：OPENAI_BASE_URL → embedding.baseUrl & llm.baseUrl */
+function applyEnvOverrides(config: ProjectHubConfig): void {
+  const baseUrl = process.env.OPENAI_BASE_URL;
+  if (baseUrl) {
+    config.embedding.baseUrl = baseUrl;
+    config.llm.baseUrl = baseUrl;
+  }
+}
+
 /** 驗證設定值的合法性 */
 function validate(config: ProjectHubConfig): void {
   if (!Number.isInteger(config.embedding.dimension) || config.embedding.dimension <= 0) {
@@ -53,6 +62,9 @@ export function loadConfig(
   if (overrides) {
     merged = deepMerge(merged, overrides as Partial<ProjectHubConfig>);
   }
+
+  // 環境變數覆蓋（.mcp.json env 或系統環境變數）優先於檔案設定
+  applyEnvOverrides(merged);
 
   validate(merged);
   return merged;
