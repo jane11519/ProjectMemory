@@ -1,0 +1,9 @@
+# ProjectHub SQLite database and runtime artifacts
+.projecthub/index.db
+.projecthub/index.db-wal
+.projecthub/index.db-shm
+.projecthub/dirty-files.txt
+.projecthub/audit.log
+
+# Raw JSONL transcripts（大檔，不進版控）
+.projecthub/transcripts/

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Stop hook: save session state on conversation end
+# Stop hook: capture conversation transcript on conversation end
 # Runs asynchronously with 60s timeout
 
 set -euo pipefail
@@ -17,5 +17,5 @@ else
   exit 0
 fi
 
-# 保存最終 session 狀態
-$CLI session save --repo-root "$REPO_ROOT" --format json 2>/dev/null || true
+# 擷取對話 transcript 並建立 session
+$CLI session capture --repo-root "$REPO_ROOT" --format json 2>/dev/null || true
