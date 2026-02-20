@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { createRequire } from 'node:module';
 import { Command } from 'commander';
 import { registerScanCommand } from './commands/scan.js';
 import { registerIndexCommand } from './commands/index.js';
@@ -10,12 +11,16 @@ import { registerInitCommand } from './commands/init.js';
 import { registerMcpCommand } from './commands/mcp.js';
 import { registerContextCommand } from './commands/context.js';
 
+// 從 package.json 動態讀取版本號，避免硬編碼導致版本不同步
+const require = createRequire(import.meta.url);
+const { version } = require('../../package.json') as { version: string };
+
 const program = new Command();
 
 program
   .name('projmem')
   .description('Project-level Obsidian knowledge base with hybrid BM25+vector search')
-  .version('0.2.0');
+  .version(version);
 
 registerScanCommand(program);
 registerIndexCommand(program);
