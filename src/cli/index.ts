@@ -15,7 +15,7 @@ const program = new Command();
 program
   .name('projecthub')
   .description('Project-level Obsidian knowledge base with hybrid BM25+vector search')
-  .version('0.1.0');
+  .version('0.2.0');
 
 registerScanCommand(program);
 registerIndexCommand(program);

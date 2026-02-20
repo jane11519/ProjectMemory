@@ -84,6 +84,7 @@ CREATE TABLE IF NOT EXISTS sessions (
   rolling_summary TEXT,
   decisions_json TEXT,
   search_footprint_json TEXT,
+  summary_json TEXT,
   status TEXT NOT NULL DEFAULT 'active'
     CHECK(status IN ('active','compacted','closed'))
 );

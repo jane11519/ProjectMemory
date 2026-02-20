@@ -3,7 +3,7 @@
 **專案級 Obsidian 知識庫，搭載多階段搜尋管線（RRF + Query Expansion + LLM Re-ranking）、MCP Server、以及階層式 Context 系統，為 Claude Code 打造的專案技能（Project Skill）。**
 
 ![Node.js](https://img.shields.io/badge/Node.js-≥18.0.0-339933?logo=node.js)
-![Tests](https://img.shields.io/badge/tests-117%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-155%20passing-brightgreen)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript)
 
@@ -12,13 +12,14 @@
 ## 功能特色
 
 - **多階段搜尋管線** — BM25 + Vector → RRF 融合 → Query Expansion → LLM Re-ranking → Position-aware Blending
-- **MCP Server** — 6 個 MCP 工具，支援 stdio 與 HTTP/SSE 傳輸，可直接接入 Claude Code
+- **MCP Server** — 9 個 MCP 工具，支援 stdio 與 HTTP/SSE 傳輸，可直接接入 Claude Code
 - **階層式 Context** — 虛擬路徑 metadata 系統，子路徑自動繼承父路徑 context
 - **OpenAI-Compatible LLM** — 支援 OpenAI、Ollama、vLLM、LiteLLM、LocalAI 等任何相容 API endpoint
 - **Dedicated Reranker 支援** — 除 chat completions 外，亦支援 `/v1/rerank` endpoint（Jina/Cohere/LocalAI cross-encoder）
 - **漸進式揭露（Progressive Disclosure）** — `brief` / `normal` / `full` 三級細節控制
 - **優雅降級（Graceful Degradation）** — 向量失敗 → BM25-only；BM25 失敗 → 向量；無 LLM → RRF-only
-- **Session 持久化** — SQLite 儲存 + Markdown 匯出，支援滾動摘要與壓縮
+- **Session 持久化** — SQLite 儲存 + Markdown 匯出，支援滾動摘要、壓縮與結構化 Summarization
+- **Session Summarize** — 透過 MCP tools 讓 Claude 直接生成結構化摘要（零外部 LLM 成本）
 - **增量索引** — SHA-256 內容雜湊偵測變更 + Embedding 維度遷移安全檢查
 - **Claude Code Hooks 整合** — `PostToolUse`、`TaskCompleted`、`Stop` 自動化追蹤
 - **Monorepo / Submodule 命名空間** — 自動偵測 `.gitmodules` 與目錄樣式
@@ -46,8 +47,9 @@ ProjectHub 採用 **Clean Architecture / Hexagonal Architecture**，從內到外
 │                 Domain Layer                     │
 │  Entities: Document, Chunk, Namespace, Session   │
 │            SearchResult, PathContext              │
-│  Value Objects: ContentHash, HybridScore         │
-│                 RRFScore, StrongSignal            │
+│  Value Objects: ContentHash, HybridScore          │
+│                 RRFScore, StrongSignal             │
+│                 SessionSummary                     │
 │  Ports: EmbeddingPort, IndexPort, LLMPort        │
 │         VaultPort, SessionPort                   │
 └─────────────────────────────────────────────────┘
@@ -187,6 +189,8 @@ npx projecthub index update    # 增量更新（dirty files）
 npx projecthub session save --session-id "session-abc"
 npx projecthub session compact --session-id "session-abc"
 npx projecthub session list
+npx projecthub session capture    # 擷取 Claude Code transcript
+# /session-summarize              # Claude Code Skill：生成結構化摘要
 ```
 
 ### Context
@@ -228,7 +232,7 @@ npx projecthub init             # 初始化專案
 
 ## MCP Server
 
-ProjectHub 可作為 MCP server 運行，提供 6 個工具供 LLM client 使用。
+ProjectHub 可作為 MCP server 運行，提供 9 個工具供 LLM client 使用。
 
 ### MCP 工具
 
@@ -240,6 +244,9 @@ ProjectHub 可作為 MCP server 運行，提供 6 個工具供 LLM client 使用
 | `projecthub_get` | `search expand <id>` | 取回特定 chunk 或文件 |
 | `projecthub_multi_get` | — | 批量取回多個項目 |
 | `projecthub_status` | `health` | 索引統計與健康狀態 |
+| `projecthub_session_list` | `session list` | 列出 sessions（含 summary 狀態過濾） |
+| `projecthub_session_transcript` | — | 讀取完整對話 transcript |
+| `projecthub_session_update_summary` | — | 儲存 Claude 生成的結構化摘要 |
 
 ### Claude Code 設定
 
@@ -554,7 +561,7 @@ SKILL.md 位於 `.claude/skills/projecthub/SKILL.md`，觸發詞包含：`projec
 |------|------|
 | `npm run build` | 編譯 TypeScript |
 | `npm run dev` | 監看模式編譯 |
-| `npm test` | 執行所有測試（117 tests） |
+| `npm test` | 執行所有測試（155 tests） |
 | `npm run test:unit` | 僅單元測試 |
 | `npm run test:integration` | 僅整合測試 |
 | `npm run test:coverage` | 覆蓋率報告 |
@@ -567,10 +574,11 @@ tests/
 ├── unit/
 │   ├── config/          # ConfigLoader
 │   ├── domain/          # ContentHash, HybridScore, RRFScore,
-│   │                    # StrongSignal, DomainErrors
+│   │                    # StrongSignal, DomainErrors, SessionSummary
 │   ├── shared/          # RetryPolicy
 │   ├── infrastructure/  # MarkdownParser, ChunkingStrategy,
 │   │                    # GitModulesParser, EmbeddingBatcher, HttpLLMAdapter
+│   ├── mcp/             # SessionTools
 │   └── application/     # HealthCheckUseCase, ContextUseCase
 └── integration/
     ├── sqlite-setup, fts5-adapter, sqlite-vec-adapter
@@ -655,13 +663,13 @@ ProjectHub/
 │   │   └── session/         # VaultSessionAdapter
 │   ├── mcp/
 │   │   ├── McpServer.ts     # Server factory + instructions
-│   │   ├── tools/           # 6 MCP tool handlers
+│   │   ├── tools/           # 9 MCP tool handlers
 │   │   └── transports/      # Stdio + HTTP/SSE
 │   └── cli/
 │       ├── commands/         # scan, index, search, session,
 │       │                     # health, init, mcp, context
 │       └── formatters/       # ProgressiveDisclosureFormatter
-├── tests/                    # unit/ + integration/（117 tests）
+├── tests/                    # unit/ + integration/（155 tests）
 ├── assets/skill/             # SKILL.md 模板
 ├── .claude/                  # Claude Code 整合
 └── vault/                    # Obsidian 知識庫

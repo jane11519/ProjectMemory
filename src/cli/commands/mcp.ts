@@ -10,6 +10,8 @@ import { loadConfig } from '../../config/ConfigLoader.js';
 import { createMcpServer } from '../../mcp/McpServer.js';
 import { startStdioTransport } from '../../mcp/transports/StdioTransport.js';
 import { startHttpTransport } from '../../mcp/transports/HttpTransport.js';
+import { VaultSessionAdapter } from '../../infrastructure/session/VaultSessionAdapter.js';
+import { FileSystemVaultAdapter } from '../../infrastructure/vault/FileSystemVaultAdapter.js';
 import type { LLMPort } from '../../domain/ports/LLMPort.js';
 import type Database from 'better-sqlite3';
 
@@ -43,6 +45,11 @@ export function registerMcpCommand(program: Command): void {
 
       const llm = createLLMAdapter(config, db);
 
+      // Session 依賴注入
+      const vault = new FileSystemVaultAdapter();
+      const sessionPort = new VaultSessionAdapter(db, vault);
+      const vaultRoot = path.join(repoRoot, config.vault.root);
+
       const server = createMcpServer({
         db,
         fts5: new FTS5Adapter(db),
@@ -51,6 +58,8 @@ export function registerMcpCommand(program: Command): void {
         llm,
         searchConfig: config.search,
         repoRoot,
+        sessionPort,
+        vaultRoot,
       });
 
       if (opts.http) {

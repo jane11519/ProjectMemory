@@ -6,6 +6,7 @@ import { IndexUseCase } from '../../src/application/IndexUseCase.js';
 import { MarkdownParser } from '../../src/infrastructure/vault/MarkdownParser.js';
 import { ChunkingStrategy } from '../../src/infrastructure/vault/ChunkingStrategy.js';
 import { FileSystemVaultAdapter } from '../../src/infrastructure/vault/FileSystemVaultAdapter.js';
+import { VaultSessionAdapter } from '../../src/infrastructure/session/VaultSessionAdapter.js';
 import { NullLLMAdapter } from '../../src/infrastructure/llm/NullLLMAdapter.js';
 import { createMcpServer, buildInstructions } from '../../src/mcp/McpServer.js';
 import type { EmbeddingPort, EmbeddingResult } from '../../src/domain/ports/EmbeddingPort.js';
@@ -53,6 +54,7 @@ function createMockEmbedding(): EmbeddingPort {
 describe('MCP Server', () => {
   const tmpDir = path.join(os.tmpdir(), 'projecthub-mcp-' + Date.now());
   const vaultDir = path.join(tmpDir, 'vault', 'code-notes');
+  const vaultRoot = path.join(tmpDir, 'vault');
   let dbMgr: DatabaseManager;
   let mockEmbed: EmbeddingPort;
 
@@ -132,7 +134,11 @@ API gateway routing and rate limiting configuration.`);
     expect(instructions).toContain('projecthub_get');
     expect(instructions).toContain('projecthub_multi_get');
     expect(instructions).toContain('projecthub_status');
+    expect(instructions).toContain('projecthub_session_list');
+    expect(instructions).toContain('projecthub_session_transcript');
+    expect(instructions).toContain('projecthub_session_update_summary');
     expect(instructions).toContain('Recommended workflow');
+    expect(instructions).toContain('Session summarize workflow');
     expect(instructions).toContain(tmpDir);
   });
 
@@ -155,6 +161,52 @@ API gateway routing and rate limiting configuration.`);
       embedding: mockEmbed,
       llm: nullLLM,
       repoRoot: tmpDir,
+    });
+
+    expect(server).toBeDefined();
+  });
+
+  /**
+   * Scenario: MCP Server 包含 session tools（當提供 session 依賴時）
+   * Given sessionPort 和 vaultRoot 已提供
+   * When 建立 MCP server
+   * Then server 包含 session tools
+   */
+  it('should register session tools when session dependencies provided', () => {
+    const db = dbMgr.getDb();
+    const vault = new FileSystemVaultAdapter();
+    const sessionPort = new VaultSessionAdapter(db, vault);
+
+    const server = createMcpServer({
+      db,
+      fts5: new FTS5Adapter(db),
+      vec: new SqliteVecAdapter(db),
+      embedding: mockEmbed,
+      llm: new NullLLMAdapter(),
+      repoRoot: tmpDir,
+      sessionPort,
+      vaultRoot,
+    });
+
+    expect(server).toBeDefined();
+  });
+
+  /**
+   * Scenario: MCP Server graceful degradation（無 session 依賴）
+   * Given 未提供 sessionPort
+   * When 建立 MCP server
+   * Then server 仍能成功建立（session tools 不註冊）
+   */
+  it('should work without session dependencies (graceful degradation)', () => {
+    const db = dbMgr.getDb();
+
+    const server = createMcpServer({
+      db,
+      fts5: new FTS5Adapter(db),
+      vec: new SqliteVecAdapter(db),
+      embedding: mockEmbed,
+      repoRoot: tmpDir,
+      // 不提供 sessionPort 和 vaultRoot
     });
 
     expect(server).toBeDefined();

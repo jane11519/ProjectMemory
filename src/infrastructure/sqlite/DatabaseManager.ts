@@ -41,6 +41,9 @@ export class DatabaseManager {
       "INSERT OR REPLACE INTO schema_meta(key, value) VALUES('version', '1')"
     ).run();
 
+    // 既有 DB 的欄位遷移
+    this.migrateSessionColumns();
+
     // 驗證 embedding 維度一致性
     this.validateEmbeddingDimension();
 
@@ -53,6 +56,18 @@ export class DatabaseManager {
 
   close(): void {
     this.db.close();
+  }
+
+  /**
+   * 既有 DB 的 sessions 欄位遷移
+   * 新增 summary_json 欄位（若不存在）
+   */
+  private migrateSessionColumns(): void {
+    const columns = this.db.pragma('table_info(sessions)') as Array<{ name: string }>;
+    if (!columns.some((c) => c.name === 'summary_json')) {
+      this.db.exec('ALTER TABLE sessions ADD COLUMN summary_json TEXT');
+      this.logger.info('Migrated sessions table: added summary_json column');
+    }
   }
 
   /**

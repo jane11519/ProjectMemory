@@ -1,6 +1,6 @@
 {
   "name": "projecthub",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Project-level Obsidian knowledge base with hybrid search for Claude Code",
   "type": "module",
   "license": "MIT",

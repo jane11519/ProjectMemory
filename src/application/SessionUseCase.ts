@@ -1,6 +1,10 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import type { Session } from '../domain/entities/Session.js';
-import type { SessionPort } from '../domain/ports/SessionPort.js';
+import type { SessionPort, SessionListFilter } from '../domain/ports/SessionPort.js';
+import type { SessionSummary } from '../domain/value-objects/SessionSummary.js';
 import type { SessionSnapshot } from './dto/SessionSnapshot.js';
+import { parseTranscript, type TranscriptSummary } from '../infrastructure/session/TranscriptParser.js';
 
 /**
  * Session 用例：管理 session 生命週期（save → compact → close）
@@ -8,6 +12,9 @@ import type { SessionSnapshot } from './dto/SessionSnapshot.js';
  * - save：將 snapshot 轉換為 Session entity，存入 SQLite + 寫出 vault Markdown
  * - compact：壓縮 rolling summary，減少 token 數，保留關鍵決策與搜尋足跡
  * - listActive：列出所有 active sessions
+ * - listSessions：帶過濾條件的 session 查詢
+ * - updateSummary：儲存 Claude 生成的結構化摘要
+ * - getTranscript：從 vault 讀取完整 transcript
  */
 export class SessionUseCase {
   /** 簡易 token 估算比例（1 token ≈ 4 字元） */
@@ -18,6 +25,8 @@ export class SessionUseCase {
   constructor(
     private readonly sessionPort: SessionPort,
     private readonly vaultSessionsDir: string,
+    /** vault 根目錄，用於讀取 transcript 備份 */
+    private readonly vaultRoot?: string,
   ) {}
 
   /**
@@ -39,10 +48,11 @@ export class SessionUseCase {
       status: snapshot.status,
     };
 
-    // 若已存在，保留 startedAt
+    // 若已存在，保留 startedAt 和 summaryJson
     const existing = this.sessionPort.getSession(snapshot.sessionId);
     if (existing) {
       session.startedAt = existing.startedAt;
+      session.summaryJson = existing.summaryJson;
     }
 
     this.sessionPort.saveSession(session);
@@ -80,6 +90,44 @@ export class SessionUseCase {
   /** 列出所有 active sessions */
   listActive(): Session[] {
     return this.sessionPort.listActiveSessions();
+  }
+
+  /** 帶過濾條件的 session 查詢 */
+  listSessions(filter?: SessionListFilter): Session[] {
+    return this.sessionPort.listSessions(filter);
+  }
+
+  /**
+   * 儲存 Claude 生成的結構化摘要
+   * 更新 DB 中的 summaryJson 欄位，並重新寫出 vault Markdown
+   */
+  async updateSummary(sessionId: string, summary: SessionSummary): Promise<Session | undefined> {
+    const session = this.sessionPort.getSession(sessionId);
+    if (!session) return undefined;
+
+    const updated: Session = {
+      ...session,
+      summaryJson: JSON.stringify(summary),
+      lastSavedAt: Date.now(),
+    };
+
+    this.sessionPort.saveSession(updated);
+    await this.sessionPort.writeSessionMarkdown(updated, this.vaultSessionsDir);
+    return updated;
+  }
+
+  /**
+   * 從 vault 讀取完整 transcript
+   * transcript 備份位於 {vaultRoot}/.projecthub/transcripts/{sessionId}.jsonl
+   */
+  getTranscript(sessionId: string): TranscriptSummary | undefined {
+    if (!this.vaultRoot) return undefined;
+
+    const backupPath = path.join(this.vaultRoot, '.projecthub', 'transcripts', `${sessionId}.jsonl`);
+    if (!fs.existsSync(backupPath)) return undefined;
+
+    const jsonlContent = fs.readFileSync(backupPath, 'utf-8');
+    return parseTranscript(jsonlContent);
   }
 
   /**

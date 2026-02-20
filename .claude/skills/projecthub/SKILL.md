@@ -26,6 +26,7 @@ Manages an Obsidian-compatible vault of Markdown notes indexed with hybrid BM25+
 | `npx projecthub search full <path>` | Show all chunks of a document |
 | `npx projecthub session save` | Save current session state |
 | `npx projecthub session compact` | Compress session rolling summary |
+| `/session-summarize` | Generate structured summary via Claude (MCP) |
 | `npx projecthub context add <path> <desc>` | Add context metadata |
 | `npx projecthub context list` | List all contexts |
 | `npx projecthub context check <path>` | Check applicable contexts |
@@ -46,6 +47,9 @@ When running as an MCP server, the following tools are available:
 | `projecthub_get` | `search expand <id>` | Retrieve specific chunk or document |
 | `projecthub_multi_get` | — | Batch retrieve multiple items |
 | `projecthub_status` | `health` | Index stats and health check |
+| `projecthub_session_list` | `session list` | List sessions with summary status |
+| `projecthub_session_transcript` | — | Read full conversation transcript |
+| `projecthub_session_update_summary` | — | Save structured session summary |
 
 ## Score Interpretation
 
@@ -105,6 +109,21 @@ Search results include applicable context metadata when available.
 - Session data persists in SQLite and exports to `vault/sessions/` as Markdown
 - Compact when rolling summary exceeds token threshold
 - Sessions track: turn count, rolling summary, decisions, search footprint
+
+### Session Summarize
+
+Use `/session-summarize` or the MCP tools directly to generate structured summaries:
+
+1. `projecthub_session_list` (hasSummary: false) — find unsummarized sessions
+2. `projecthub_session_transcript` — read the full conversation
+3. Generate summary (overview, decisions, outcomes, openItems, tags)
+4. `projecthub_session_update_summary` — save the structured summary
+
+### Auto-Summarize Reminder
+
+When starting a new conversation, check for unsummarized sessions:
+- Use `projecthub_session_list` with `hasSummary: false`
+- If found, offer to summarize the most recent one
 
 ## Architecture
 
