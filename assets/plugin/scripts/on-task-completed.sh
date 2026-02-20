@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# TaskCompleted hook: run incremental index update and session save
+# TaskCompleted hook: run incremental index update
 # Triggered when a Claude Code task completes
 
 set -euo pipefail
@@ -22,6 +22,3 @@ DIRTY_FILE="$REPO_ROOT/vault/.projmem/dirty-files.txt"
 if [ -f "$DIRTY_FILE" ] && [ -s "$DIRTY_FILE" ]; then
   $CLI index update --repo-root "$REPO_ROOT" --format json 2>/dev/null || true
 fi
-
-# 保存 session 狀態
-$CLI session save --repo-root "$REPO_ROOT" --format json 2>/dev/null || true

@@ -1,6 +1,6 @@
 {
   "name": "projmem",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Project-level Obsidian knowledge base with hybrid search for Claude Code",
   "type": "module",
   "license": "MIT",
