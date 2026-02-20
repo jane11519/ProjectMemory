@@ -19,8 +19,6 @@ import { parseTranscript, type TranscriptSummary } from '../infrastructure/sessi
 export class SessionUseCase {
   /** 簡易 token 估算比例（1 token ≈ 4 字元） */
   private static readonly CHARS_PER_TOKEN = 4;
-  /** compact 後的目標 summary 最大字元數 */
-  private static readonly COMPACT_MAX_CHARS = 500;
 
   constructor(
     private readonly sessionPort: SessionPort,
@@ -131,23 +129,9 @@ export class SessionUseCase {
   }
 
   /**
-   * 壓縮 summary：若超過上限，截取到最近的句號邊界
-   * 確保壓縮後長度 < 原始長度（當原始超過上限時）
+   * 壓縮 summary：保留完整內容，不截斷
    */
   private compactSummary(summary: string): string {
-    if (summary.length <= SessionUseCase.COMPACT_MAX_CHARS) {
-      return summary;
-    }
-
-    // 在上限範圍內找最後一個句號
-    const truncated = summary.slice(0, SessionUseCase.COMPACT_MAX_CHARS);
-    const lastPeriod = truncated.lastIndexOf('.');
-
-    if (lastPeriod > 0) {
-      return truncated.slice(0, lastPeriod + 1);
-    }
-
-    // 找不到句號，直接截斷並加省略號
-    return truncated.trimEnd() + '...';
+    return summary;
   }
 }

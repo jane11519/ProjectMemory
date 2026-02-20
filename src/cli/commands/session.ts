@@ -203,31 +203,17 @@ export function findLatestTranscript(claudeProjectDir: string): string | undefin
 
 /**
  * 從對話回合建構可讀的 rolling summary
- * 擷取前 N 回合文字，上限 SUMMARY_MAX_CHARS 字元
+ * 保留所有回合文字，不設字數上限
  */
 function buildRollingSummary(
   turns: Array<{ role: string; text: string }>,
-  maxChars = 2000,
 ): string {
   const lines: string[] = [];
-  let totalLen = 0;
 
   for (const turn of turns) {
     if (!turn.text) continue;
     const prefix = turn.role === 'user' ? '**User**' : '**Assistant**';
-    const line = `${prefix}: ${turn.text}`;
-
-    if (totalLen + line.length > maxChars) {
-      // 加入截斷後的部分
-      const remaining = maxChars - totalLen;
-      if (remaining > 20) {
-        lines.push(line.slice(0, remaining) + '...');
-      }
-      break;
-    }
-
-    lines.push(line);
-    totalLen += line.length + 1; // +1 for newline
+    lines.push(`${prefix}: ${turn.text}`);
   }
 
   return lines.join('\n');
