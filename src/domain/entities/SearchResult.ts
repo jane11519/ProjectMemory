@@ -17,4 +17,6 @@ export interface SearchResult {
   rerankerScore?: number;
   /** 適用的 context metadata（階層繼承） */
   contexts?: string[];
+  /** 關聯的原始碼檔案路徑（從 frontmatter ref_code_paths 讀取） */
+  refCodePaths?: string[];
 }

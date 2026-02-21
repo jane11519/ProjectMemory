@@ -58,6 +58,9 @@ export function registerDeepSearchTool(server: McpServer, deps: McpDependencies)
         if (r.rerankerScore !== undefined) scores.push(`reranker: ${r.rerankerScore.toFixed(4)}`);
         lines.push(`  ${scores.join(' | ')} | ${r.docPath}:${r.startLine}-${r.endLine}`);
         if (r.snippet) lines.push(`  ${r.snippet}`);
+        if (r.refCodePaths && r.refCodePaths.length > 0) {
+          lines.push(`  refs: ${r.refCodePaths.join(', ')}`);
+        }
         lines.push('');
       }
 

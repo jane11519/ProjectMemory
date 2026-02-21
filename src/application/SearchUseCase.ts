@@ -424,7 +424,7 @@ export class SearchUseCase {
       const row = this.db.prepare(`
         SELECT
           c.chunk_id, c.heading_path, c.start_line, c.end_line, c.text,
-          d.doc_path, d.title,
+          d.doc_path, d.title, d.ref_code_path,
           n.name AS namespace_name
         FROM chunks c
         JOIN docs d ON c.doc_id = d.doc_id
@@ -437,6 +437,15 @@ export class SearchUseCase {
       const snippet = row.text.length > 200
         ? row.text.slice(0, 200) + '...'
         : row.text;
+
+      // 解析 ref_code_paths JSON
+      let refCodePaths: string[] | undefined;
+      if (row.ref_code_path) {
+        try {
+          const parsed = JSON.parse(row.ref_code_path);
+          if (Array.isArray(parsed) && parsed.length > 0) refCodePaths = parsed;
+        } catch { /* malformed JSON — skip */ }
+      }
 
       results.push({
         chunkId: row.chunk_id,
@@ -453,6 +462,7 @@ export class SearchUseCase {
         text: row.text,
         rrfScore: item.rrfScore,
         rerankerScore: item.rerankerScore,
+        refCodePaths,
       });
     }
 

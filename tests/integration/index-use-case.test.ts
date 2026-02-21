@@ -154,4 +154,114 @@ Avatar upload and settings.`);
     expect(stats.embeddingFailed).toBe(true);
     expect(stats.warnings.length).toBeGreaterThan(0);
   });
+
+  describe('ref_code_paths frontmatter', () => {
+    it('should store ref_code_paths array as JSON in ref_code_path column', async () => {
+      fs.writeFileSync(path.join(vaultDir, 'with-refs.md'), `---
+title: API Gateway
+ref_code_paths:
+  - src/gateway/GatewayService.ts
+  - src/gateway/RateLimiter.ts
+---
+# API Gateway
+
+Routes all incoming traffic.`);
+
+      const mockEmbed = createMockEmbedding(dim);
+      useCase = new IndexUseCase(
+        dbMgr.getDb(), fts5, vec,
+        new MarkdownParser(), new ChunkingStrategy(),
+        new FileSystemVaultAdapter(), mockEmbed,
+      );
+      const stats = await useCase.buildFull(tmpDir, 'vault', ['code-notes']);
+
+      expect(stats.docsProcessed).toBe(1);
+
+      const doc = dbMgr.getDb().prepare(
+        "SELECT ref_code_path FROM docs WHERE doc_path = 'code-notes/with-refs.md'"
+      ).get() as any;
+      const parsed = JSON.parse(doc.ref_code_path);
+      expect(parsed).toEqual(['src/gateway/GatewayService.ts', 'src/gateway/RateLimiter.ts']);
+    });
+
+    it('should convert scalar string to single-element array with warning', async () => {
+      fs.writeFileSync(path.join(vaultDir, 'scalar-ref.md'), `---
+title: Scalar Ref
+ref_code_paths: src/service.ts
+---
+# Scalar Ref
+
+Some content.`);
+
+      const mockEmbed = createMockEmbedding(dim);
+      useCase = new IndexUseCase(
+        dbMgr.getDb(), fts5, vec,
+        new MarkdownParser(), new ChunkingStrategy(),
+        new FileSystemVaultAdapter(), mockEmbed,
+      );
+      const stats = await useCase.buildFull(tmpDir, 'vault', ['code-notes']);
+
+      expect(stats.docsProcessed).toBe(1);
+      expect(stats.warnings).toContainEqual(
+        expect.stringContaining('ref_code_paths should be a YAML list')
+      );
+
+      const doc = dbMgr.getDb().prepare(
+        "SELECT ref_code_path FROM docs WHERE doc_path = 'code-notes/scalar-ref.md'"
+      ).get() as any;
+      const parsed = JSON.parse(doc.ref_code_path);
+      expect(parsed).toEqual(['src/service.ts']);
+    });
+
+    it('should store null when no ref_code_paths in frontmatter', async () => {
+      fs.writeFileSync(path.join(vaultDir, 'no-refs.md'), `---
+title: No Refs
+---
+# No Refs
+
+Content without refs.`);
+
+      const mockEmbed = createMockEmbedding(dim);
+      useCase = new IndexUseCase(
+        dbMgr.getDb(), fts5, vec,
+        new MarkdownParser(), new ChunkingStrategy(),
+        new FileSystemVaultAdapter(), mockEmbed,
+      );
+      await useCase.buildFull(tmpDir, 'vault', ['code-notes']);
+
+      const doc = dbMgr.getDb().prepare(
+        "SELECT ref_code_path FROM docs WHERE doc_path = 'code-notes/no-refs.md'"
+      ).get() as any;
+      expect(doc.ref_code_path).toBeNull();
+    });
+
+    it('should exclude ref_code_paths from FTS5 properties field', async () => {
+      fs.writeFileSync(path.join(vaultDir, 'fts-check.md'), `---
+title: FTS Check
+ref_code_paths:
+  - src/uniqueFtsExclusionTest.ts
+category: architecture
+---
+# FTS Check
+
+Verify FTS exclusion.`);
+
+      const mockEmbed = createMockEmbedding(dim);
+      useCase = new IndexUseCase(
+        dbMgr.getDb(), fts5, vec,
+        new MarkdownParser(), new ChunkingStrategy(),
+        new FileSystemVaultAdapter(), mockEmbed,
+      );
+      await useCase.buildFull(tmpDir, 'vault', ['code-notes']);
+
+      // contentless FTS5 無法直接 SELECT 內容，改用搜尋驗證：
+      // 搜尋 ref_code_paths 路徑的唯一字串不應命中
+      const refPathHits = fts5.searchBM25('uniqueFtsExclusionTest', 10);
+      expect(refPathHits.size).toBe(0);
+
+      // category:architecture 應寫入 properties 並可被搜尋到
+      const categoryHits = fts5.searchBM25('architecture', 10);
+      expect(categoryHits.size).toBeGreaterThan(0);
+    });
+  });
 });

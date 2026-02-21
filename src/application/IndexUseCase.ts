@@ -140,6 +140,16 @@ export class IndexUseCase {
       ?? /^#\s+(.+)$/m.exec(parsed.body)?.[1]?.trim()
       ?? path.basename(filePath, '.md');
 
+    // 提取 ref_code_paths
+    const rawRefPaths = parsed.frontmatter.ref_code_paths;
+    let refCodePaths: string[] | undefined;
+    if (Array.isArray(rawRefPaths)) {
+      refCodePaths = rawRefPaths.map((p: unknown) => String(p).trim()).filter(Boolean);
+    } else if (typeof rawRefPaths === 'string' && rawRefPaths.trim()) {
+      refCodePaths = [rawRefPaths.trim()];
+      stats.warnings.push(`${relPath}: ref_code_paths should be a YAML list, got scalar string.`);
+    }
+
     // 切塊
     const rawChunks = this.chunker.chunkByHeadings(relPath, parsed.body);
     if (rawChunks.length === 0) return;
@@ -148,12 +158,14 @@ export class IndexUseCase {
     const transaction = this.db.transaction(() => {
       // 插入 doc
       const docResult = this.db.prepare(`
-        INSERT OR REPLACE INTO docs(namespace_id, doc_path, source_kind, title, content_hash, file_size, mtime_ms, frontmatter_json, indexed_at)
-        VALUES(1, ?, 'code_note', ?, ?, ?, ?, ?, ?)
+        INSERT OR REPLACE INTO docs(namespace_id, doc_path, source_kind, title, content_hash, file_size, mtime_ms, frontmatter_json, ref_code_path, indexed_at)
+        VALUES(1, ?, 'code_note', ?, ?, ?, ?, ?, ?, ?)
       `).run(
         relPath, title, contentHash,
         fileInfo.size, fileInfo.mtimeMs,
-        JSON.stringify(parsed.frontmatter), Date.now(),
+        JSON.stringify(parsed.frontmatter),
+        refCodePaths ? JSON.stringify(refCodePaths) : null,
+        Date.now(),
       );
       const docId = Number(docResult.lastInsertRowid);
 
@@ -189,7 +201,7 @@ export class IndexUseCase {
           ? parsed.frontmatter.tags.join(',')
           : (parsed.frontmatter.tags ?? ''),
         properties: Object.entries(parsed.frontmatter)
-          .filter(([k]) => k !== 'tags' && k !== 'title')
+          .filter(([k]) => k !== 'tags' && k !== 'title' && k !== 'ref_code_paths')
           .map(([k, v]) => `${k}:${v}`)
           .join(' '),
       }));

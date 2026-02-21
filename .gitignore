@@ -7,8 +7,8 @@ dist/
 vault/.projmem/index.db
 vault/.projmem/dirty-files.txt
 vault/.projmem/audit.log
-vault/.obsidian/workspace.json
-vault/.obsidian/workspace-mobile.json
+vault/.obsidian/
+vault/sessions/
 .env
 .mcp.json
 *.log

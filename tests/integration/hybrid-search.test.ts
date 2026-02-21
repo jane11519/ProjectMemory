@@ -153,4 +153,51 @@ Gateway health monitoring.`);
     expect(response.results.length).toBeGreaterThan(0);
     expect(response.warnings.length).toBeGreaterThan(0);
   });
+
+  describe('ref_code_paths in search results', () => {
+    it('should include refCodePaths when document has ref_code_paths', async () => {
+      // 建立帶 ref_code_paths 的文件
+      fs.writeFileSync(path.join(vaultDir, 'with-refs.md'), `---
+title: Ref Code Test
+ref_code_paths:
+  - src/services/AuthService.ts
+  - src/middleware/jwt.ts
+---
+# Ref Code Test
+
+Authentication implementation with JWT tokens.`);
+
+      // 重新索引
+      const indexer = new IndexUseCase(
+        dbMgr.getDb(), fts5, vec,
+        new MarkdownParser(), new ChunkingStrategy(),
+        new FileSystemVaultAdapter(), mockEmbed,
+      );
+      await indexer.buildFull(tmpDir, 'vault', ['code-notes']);
+
+      searchUseCase = new SearchUseCase(dbMgr.getDb(), fts5, vec, mockEmbed);
+      const response = await searchUseCase.search({
+        query: 'Ref Code Test',
+        topK: 10,
+        mode: 'bm25_only',
+      });
+
+      const match = response.results.find((r) => r.title === 'Ref Code Test');
+      expect(match).toBeDefined();
+      expect(match!.refCodePaths).toEqual(['src/services/AuthService.ts', 'src/middleware/jwt.ts']);
+    });
+
+    it('should have undefined refCodePaths when document has no ref_code_paths', async () => {
+      const response = await searchUseCase.search({
+        query: 'authentication',
+        topK: 10,
+        mode: 'bm25_only',
+      });
+
+      expect(response.results.length).toBeGreaterThan(0);
+      for (const r of response.results) {
+        expect(r.refCodePaths).toBeUndefined();
+      }
+    });
+  });
 });

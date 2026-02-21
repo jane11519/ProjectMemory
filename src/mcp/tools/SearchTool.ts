@@ -53,6 +53,9 @@ function formatSearchResponse(response: any): string {
     lines.push(`[#${r.chunkId}] ${r.title} — ${r.headingPath || '(root)'}`);
     lines.push(`  Score: ${r.finalScore.toFixed(4)} | ${r.docPath}:${r.startLine}-${r.endLine}`);
     if (r.snippet) lines.push(`  ${r.snippet}`);
+    if (r.refCodePaths && r.refCodePaths.length > 0) {
+      lines.push(`  refs: ${r.refCodePaths.join(', ')}`);
+    }
     lines.push('');
   }
 

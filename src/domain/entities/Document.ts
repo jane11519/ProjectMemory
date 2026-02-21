@@ -4,7 +4,7 @@ export interface Document {
   docId?: number;
   namespaceId: number;
   docPath: string;
-  refCodePath?: string;
+  refCodePaths?: string[];
   sourceKind: SourceKind;
   title: string;
   contentHash: string;
